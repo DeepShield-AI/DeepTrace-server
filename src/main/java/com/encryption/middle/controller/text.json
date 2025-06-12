@@ -1,0 +1,12 @@
+{
+  "startTime": 123334,
+  "client": "fontend-xxxx",
+  "server": "product",
+  "server_port": "5001",
+  "data_type": "Local",
+  "protocol": "gRPC",
+  "delay": 10000,
+  "trace_id": 1234432,
+  "span_cnt": 10,
+  "status_code": 200
+}

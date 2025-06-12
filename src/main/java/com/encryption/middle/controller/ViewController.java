@@ -1,0 +1,112 @@
+package com.encryption.middle.controller;
+
+import com.alibaba.fastjson.JSON;
+import com.encryption.middle.pojo.dto.DistributeTableDataDTO;
+import com.encryption.middle.pojo.dto.DistributeTableQueryDTO;
+import com.encryption.middle.result.PageResult;
+import com.encryption.middle.result.Result;
+import com.encryption.middle.service.DistributeService;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.User;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.logging.log4j.Logger;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+
+@RestController
+@Slf4j
+public class ViewController {
+//    private static final Logger log = (Logger) LoggerFactory.getLogger(ViewController.class);
+
+    @Autowired
+    private DistributeService distributeService;
+
+    @RequestMapping("/eventDetail")
+    public Result<String> eventDetail() {
+        return Result.success("TTTTTT");
+    }
+    @RequestMapping("/test")
+    public String test()throws IOException {
+        // 创建连接
+        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY,
+                new UsernamePasswordCredentials("elastic", "netsys204")
+                );
+        // 设置连接IP端口以及密码
+        RestHighLevelClient client=new RestHighLevelClient(
+                RestClient.builder(new HttpHost("114.215.254.187",9200, "http"))
+                    .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
+        );
+
+        SearchRequest searchRequest = new SearchRequest("spans_agent1");
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(QueryBuilders.matchQuery("component", "PostStorageServ"));
+        // 设置分页，从第 0 页开始，每页返回 10 条记录
+        sourceBuilder.from(0);
+        sourceBuilder.size(10);
+        // 设置查询源
+        searchRequest.source(sourceBuilder);
+
+        // 执行查询
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+        System.out.print(searchResponse);
+        return JSON.toJSONString(searchResponse);
+//        try {
+//            SearchRequest searchRequest = new SearchRequest("PostStorageServ");
+//            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+//            sourceBuilder.query(QueryBuilders.matchQuery("component", "PostStorageServ"));
+//            // 设置分页，从第 0 页开始，每页返回 10 条记录
+//            sourceBuilder.from(0);
+//            sourceBuilder.size(10);
+//            // 设置查询源
+//            searchRequest.source(sourceBuilder);
+//
+//            // 执行查询
+//            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+//            return JSON.toJSONString(searchResponse);
+//        } catch(IOException e) {
+//            e.printStackTrace();
+//        }
+//        client.close();
+//        return "开启成功";
+    }
+//    @RequestMapping("/test2")
+//    public PageResult test2() {
+//        LocalDateTime local = LocalDateTime.now();
+//        DistributeTableDataDTO dataDTO = new DistributeTableDataDTO();
+//        dataDTO.setStartTime(local);
+//        dataDTO.setPage(10);
+//        dataDTO.setPageSize(10);
+//        PageResult pageResult = distributeService.DistributeTableDataQuery(dataDTO);
+//        System.out.print(pageResult);
+//        return pageResult;
+//    }
+    @RequestMapping("/distributeList")
+    public Result distributeList(@RequestBody DistributeTableQueryDTO distributeTableQueryDTO) throws IOException {
+        System.out.println(distributeTableQueryDTO+"1233231");
+        log.info("测试", distributeTableQueryDTO);
+        PageResult pageResult = distributeService.DistributeTableDataQuery(distributeTableQueryDTO);
+        Result result = new Result();
+        result.setData(pageResult);
+        return result;
+    }
+
+}
