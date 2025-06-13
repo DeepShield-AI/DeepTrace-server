@@ -12,6 +12,7 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.lucene.search.spans.Spans;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -37,7 +38,8 @@ public class DistributeServiceImpl implements DistributeService {
         // 连接elastic进行查询，封装接口数据
         PageResult pageResult = new PageResult();
         // 创建连接
-
+        // 处理请求参数
+//        log.info("{}=======", distributeTableDataDTO);
         // 创建请求凭证
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(AuthScope.ANY,
@@ -51,8 +53,9 @@ public class DistributeServiceImpl implements DistributeService {
         /**
          * spans_agent1
          * test-rps-100-mappings
+         * test-rps-100-traces
          */
-        SearchRequest searchRequest = new SearchRequest("test-rps-100-mappings");
+        SearchRequest searchRequest = new SearchRequest("test-rps-100-traces");
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         // 匹配查询
 //        sourceBuilder.query(QueryBuilders.matchQuery("component", "PostStorageServ"));
@@ -66,7 +69,7 @@ public class DistributeServiceImpl implements DistributeService {
 
         // 执行查询
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-//        log.info("{}", searchResponse);
+//        log.info("searchResponse:{}", searchResponse);
         SearchHits hits = searchResponse.getHits();
 
         // 输出总命中数
@@ -87,15 +90,35 @@ public class DistributeServiceImpl implements DistributeService {
         List<DistributTableResponseDTO> distributTableResponseDTOList = new ArrayList<>();
         for(SearchHit hit : hits.getHits()) {
             // 塞数据
-            log.info("===={}", hit);
+//            log.info("===={}", hit);
             Map<String, Object> source = hit.getSourceAsMap();
-            log.info("duration-----{}", source.get("src_ip").getClass());
-            DistributTableResponseDTO distributTableResponseDTO = new DistributTableResponseDTO();
-            distributTableResponseDTO.setDataType("Unknown");
-            distributTableResponseDTO.setDelay((double)source.get("duration"));
-            distributTableResponseDTO.setClient((Long) source.get("src_ip"));
+            Object spans = source.get("spans");
+//            log.info("spans:{}", spans);
+//            log.info("duration-----{}", source.get("src_ip").getClass());
+            DistributTableResponseDTO distributeTableResponseDTO = new DistributTableResponseDTO();
+            distributeTableResponseDTO.setTraceId((String) source.get("trace_id"));
+            distributeTableResponseDTO.setSpanNum((Integer) source.get("span_num"));
+            distributeTableResponseDTO.setE2eDuration((Double) source.get("e2e_duration"));
+            distributeTableResponseDTO.setEndpoint((String) source.get("endpoint"));
+            distributeTableResponseDTO.setComponentName((String) source.get("component_name"));
+            distributeTableResponseDTO.setServerIp((String) source.get("server_ip"));
+            distributeTableResponseDTO.setServerPort((Integer) source.get("server_port"));
+            distributeTableResponseDTO.setClientIp((String) source.get("client_ip"));
+            distributeTableResponseDTO.setClientPort((Integer) source.get("client_port"));
+            distributeTableResponseDTO.setProtocol((String) source.get("protocol"));
+            distributeTableResponseDTO.setStatusCode((String) source.get("status_code"));
 
-            distributTableResponseDTOList.add(distributTableResponseDTO);
+//            distributeTableResponseDTO.setDataType("Unknown");
+//            distributeTableResponseDTO.setStartTime((Long) source.get("start_time"));
+//            distributeTableResponseDTO.setEndTime((Long) source.get("end_time"));
+//            distributeTableResponseDTO.setDstIp((Long) source.get("dst_ip"));
+//            distributeTableResponseDTO.setSrcIp((Long) source.get("src_ip"));
+//            distributeTableResponseDTO.setDuration((Double) source.get("duration"));
+//            distributeTableResponseDTO.setSrcPort((Integer) source.get("src_port"));
+//            distributeTableResponseDTO.setDstPort((Integer) source.get("dst_port"));
+//            distributeTableResponseDTO.setDirection((String) source.get("direction"));
+
+            distributTableResponseDTOList.add(distributeTableResponseDTO);
         }
 
 

@@ -24,6 +24,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,6 +34,7 @@ import java.time.LocalDateTime;
 
 @RestController
 @Slf4j
+@CrossOrigin
 public class ViewController {
 //    private static final Logger log = (Logger) LoggerFactory.getLogger(ViewController.class);
 
@@ -101,8 +103,7 @@ public class ViewController {
 //    }
     @RequestMapping("/distributeList")
     public Result distributeList(@RequestBody DistributeTableQueryDTO distributeTableQueryDTO) throws IOException {
-        System.out.println(distributeTableQueryDTO+"1233231");
-        log.info("测试", distributeTableQueryDTO);
+        log.info("测试{}", distributeTableQueryDTO);
         PageResult pageResult = distributeService.DistributeTableDataQuery(distributeTableQueryDTO);
         Result result = new Result();
         result.setData(pageResult);
