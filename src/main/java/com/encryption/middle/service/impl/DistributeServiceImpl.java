@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.encryption.middle.pojo.dto.DistributTableResponseDTO;
 import com.encryption.middle.pojo.dto.DistributeTableDataDTO;
 import com.encryption.middle.pojo.dto.DistributeTableQueryDTO;
+import com.encryption.middle.pojo.dto.FlamegraphQueryDTO;
 import com.encryption.middle.result.PageResult;
 import com.encryption.middle.service.DistributeService;
 import lombok.extern.slf4j.Slf4j;
@@ -33,10 +34,17 @@ import java.util.Map;
 @Slf4j
 public class DistributeServiceImpl implements DistributeService {
 
-    @Override
+    /**
+     * 表格数据查询
+     * @param distributeTableDataDTO
+     * @return
+     * @throws IOException
+     */
+//    @Override
     public PageResult DistributeTableDataQuery(DistributeTableQueryDTO distributeTableDataDTO) throws IOException {
         // 连接elastic进行查询，封装接口数据
         PageResult pageResult = new PageResult();
+//        log.info("测试--{}", distributeTableDataDTO);
         // 创建连接
         // 处理请求参数
 //        log.info("{}=======", distributeTableDataDTO);
@@ -55,15 +63,15 @@ public class DistributeServiceImpl implements DistributeService {
          * test-rps-100-mappings
          * test-rps-100-traces
          */
-        SearchRequest searchRequest = new SearchRequest("test-rps-100-traces");
+        SearchRequest searchRequest = new SearchRequest("traces");
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         // 匹配查询
 //        sourceBuilder.query(QueryBuilders.matchQuery("component", "PostStorageServ"));
         // 查全部数据
         sourceBuilder.query(QueryBuilders.matchAllQuery());
         // 设置分页，从第 0 页开始，每页返回 10 条记录
-        sourceBuilder.from(0);
-        sourceBuilder.size(10);
+        sourceBuilder.from(distributeTableDataDTO.getPage());
+        sourceBuilder.size(distributeTableDataDTO.getPageSize());
         // 设置查询源
         searchRequest.source(sourceBuilder);
 
@@ -72,21 +80,6 @@ public class DistributeServiceImpl implements DistributeService {
 //        log.info("searchResponse:{}", searchResponse);
         SearchHits hits = searchResponse.getHits();
 
-        // 输出总命中数
-//        System.out.println("Total hits: " + hits.getTotalHits().value);
-
-        // 遍历文档
-//        for (SearchHit hit : hits.getHits()) {
-//            // 封装遍历后的对象进行封装List
-//            System.out.println("---");
-//            System.out.println("ID: " + hit.getId());
-//            System.out.println("Source: " + hit.getSourceAsString());
-//
-//            // 从 Map 获取字段
-//            Map<String, Object> source = hit.getSourceAsMap();
-//            System.out.println("Name: " + source.get("name"));
-//            System.out.println("Age: " + source.get("age"));
-//        }
         List<DistributTableResponseDTO> distributTableResponseDTOList = new ArrayList<>();
         for(SearchHit hit : hits.getHits()) {
             // 塞数据
@@ -126,5 +119,85 @@ public class DistributeServiceImpl implements DistributeService {
         pageResult.setRecords(distributTableResponseDTOList);
 
         return pageResult;
+    }
+
+    /**
+     * 火焰图相关数据查询
+     * @param flamegraphDataQuery
+     * @return
+     * @throws IOException
+     */
+    @Override
+    public PageResult FlamegraphDataQuery(FlamegraphQueryDTO flamegraphDataQuery) throws IOException {
+
+        // 连接elastic进行查询，封装接口数据
+        PageResult pageResult = new PageResult();
+        log.info("测试--{}", flamegraphDataQuery.getTraceId());
+
+        // 创建连接
+        // 处理请求参数
+//        log.info("{}=======", distributeTableDataDTO);
+        // 创建请求凭证
+        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY,
+                new UsernamePasswordCredentials("elastic", "netsys204")
+        );
+        // 设置连接IP端口和密码
+        RestHighLevelClient client = new RestHighLevelClient(
+                RestClient.builder(new HttpHost("114.215.254.187", 9200, "http"))
+                        .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
+        );
+        /**
+         * spans_agent1
+         * test-rps-100-mappings
+         * test-rps-100-traces
+         */
+        SearchRequest searchRequest = new SearchRequest("traces");
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        // 匹配查询
+//        sourceBuilder.query(QueryBuilders.matchQuery("trace_id", flamegraphDataQuery.getTraceId()));
+        sourceBuilder.query(QueryBuilders.termsQuery("trace_id", flamegraphDataQuery.getTraceId()));
+
+        // 查全部数据
+//        sourceBuilder.query(QueryBuilders.matchAllQuery());
+        // 设置分页，从第 0 页开始，每页返回 10 条记录
+        sourceBuilder.from(0);
+        sourceBuilder.size(10);
+        // 设置查询源
+        searchRequest.source(sourceBuilder);
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+        SearchHit[] hits = searchResponse.getHits().getHits();
+        for(SearchHit hit : hits) {
+            Map<String, Object> source = hit.getSourceAsMap();
+            ArrayList spans = (ArrayList) source.get("spans");
+            pageResult.setRecords(spans);
+        }
+//        pageResult.setData(searchResponse.getHits().getHits());
+//        log.info("测试2{}", searchResponse.getHits().getHits());
+        return pageResult;
+    }
+
+    // 打印查询结果
+    private void printSearchResults(SearchResponse response) {
+        long totalHits = response.getHits().getTotalHits().value;
+        System.out.println("找到 " + totalHits + " 条匹配记录");
+
+        for (SearchHit hit : response.getHits().getHits()) {
+            System.out.println("\n文档ID: " + hit.getId());
+            System.out.println("来源索引: " + hit.getIndex());
+            System.out.println("匹配分数: " + hit.getScore());
+
+            // 打印文档原始JSON内容
+            System.out.println("文档内容: " + hit.getSourceAsString());
+
+            // 或者按字段获取值（根据你的文档结构调整）
+            /*
+            Map<String, Object> source = hit.getSourceAsMap();
+            System.out.println("trace_id: " + source.get("trace_id"));
+            System.out.println("span_id: " + source.get("span_id"));
+            System.out.println("timestamp: " + source.get("timestamp"));
+            */
+        }
     }
 }
