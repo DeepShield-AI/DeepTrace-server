@@ -190,8 +190,6 @@ public class DistributeServiceImpl implements DistributeService {
 
             // 打印文档原始JSON内容
             System.out.println("文档内容: " + hit.getSourceAsString());
-
-            // 或者按字段获取值（根据你的文档结构调整）
             /*
             Map<String, Object> source = hit.getSourceAsMap();
             System.out.println("trace_id: " + source.get("trace_id"));
