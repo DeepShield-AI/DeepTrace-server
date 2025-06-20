@@ -13,6 +13,7 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.spans.Spans;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -79,6 +80,9 @@ public class DistributeServiceImpl implements DistributeService {
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 //        log.info("searchResponse:{}", searchResponse);
         SearchHits hits = searchResponse.getHits();
+        log.info("totalHits:{}", hits.getTotalHits());
+        TotalHits totalHits = hits.getTotalHits();
+        Long totalCount = totalHits.value;
 
         List<DistributTableResponseDTO> distributTableResponseDTOList = new ArrayList<>();
         for(SearchHit hit : hits.getHits()) {
@@ -115,7 +119,7 @@ public class DistributeServiceImpl implements DistributeService {
         }
 
 
-        pageResult.setTotal(10);
+        pageResult.setTotal(totalCount);
         pageResult.setRecords(distributTableResponseDTOList);
 
         return pageResult;
