@@ -8,7 +8,7 @@ import lombok.Setter;
 public class DistributTableResponseDTO {
     private String traceId;
     private Integer spanNum;
-    private Double e2eDuration;
+    private Integer e2eDuration;
     private String endpoint;
     private String componentName;
     private String serverIp;

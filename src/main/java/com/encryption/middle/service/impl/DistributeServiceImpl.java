@@ -34,6 +34,8 @@ import java.util.Map;
 @Service
 @Slf4j
 public class DistributeServiceImpl implements DistributeService {
+    final String dbIpStreet = "47.96.100.108";
+
 
     /**
      * 表格数据查询
@@ -43,6 +45,7 @@ public class DistributeServiceImpl implements DistributeService {
      */
 //    @Override
     public PageResult DistributeTableDataQuery(DistributeTableQueryDTO distributeTableDataDTO) throws IOException {
+//        final String dbIpStreet = "114.215.254.187";
         // 连接elastic进行查询，封装接口数据
         PageResult pageResult = new PageResult();
 //        log.info("测试--{}", distributeTableDataDTO);
@@ -56,7 +59,7 @@ public class DistributeServiceImpl implements DistributeService {
                 );
         // 设置连接IP端口和密码
         RestHighLevelClient client = new RestHighLevelClient(
-                RestClient.builder(new HttpHost("114.215.254.187", 9200, "http"))
+                RestClient.builder(new HttpHost(dbIpStreet, 9200, "http"))
                 .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
         );
         /**
@@ -80,22 +83,21 @@ public class DistributeServiceImpl implements DistributeService {
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 //        log.info("searchResponse:{}", searchResponse);
         SearchHits hits = searchResponse.getHits();
-        log.info("totalHits:{}", hits.getTotalHits());
+        log.info("totalHits:{}", hits);
+        log.info("HHHHHHHHH:{}", hits.getHits());
         TotalHits totalHits = hits.getTotalHits();
+
         Long totalCount = totalHits.value;
 
+        SearchHit[] hits1 = hits.getHits();
         List<DistributTableResponseDTO> distributTableResponseDTOList = new ArrayList<>();
-        for(SearchHit hit : hits.getHits()) {
-            // 塞数据
-//            log.info("===={}", hit);
+
+        for(SearchHit hit : hits1) {
             Map<String, Object> source = hit.getSourceAsMap();
-            Object spans = source.get("spans");
-//            log.info("spans:{}", spans);
-//            log.info("duration-----{}", source.get("src_ip").getClass());
             DistributTableResponseDTO distributeTableResponseDTO = new DistributTableResponseDTO();
             distributeTableResponseDTO.setTraceId((String) source.get("trace_id"));
             distributeTableResponseDTO.setSpanNum((Integer) source.get("span_num"));
-            distributeTableResponseDTO.setE2eDuration((Double) source.get("e2e_duration"));
+            distributeTableResponseDTO.setE2eDuration((Integer) source.get("e2e_duration"));
             distributeTableResponseDTO.setEndpoint((String) source.get("endpoint"));
             distributeTableResponseDTO.setComponentName((String) source.get("component_name"));
             distributeTableResponseDTO.setServerIp((String) source.get("server_ip"));
@@ -104,20 +106,23 @@ public class DistributeServiceImpl implements DistributeService {
             distributeTableResponseDTO.setClientPort((Integer) source.get("client_port"));
             distributeTableResponseDTO.setProtocol((String) source.get("protocol"));
             distributeTableResponseDTO.setStatusCode((String) source.get("status_code"));
-
-//            distributeTableResponseDTO.setDataType("Unknown");
-//            distributeTableResponseDTO.setStartTime((Long) source.get("start_time"));
-//            distributeTableResponseDTO.setEndTime((Long) source.get("end_time"));
-//            distributeTableResponseDTO.setDstIp((Long) source.get("dst_ip"));
-//            distributeTableResponseDTO.setSrcIp((Long) source.get("src_ip"));
-//            distributeTableResponseDTO.setDuration((Double) source.get("duration"));
-//            distributeTableResponseDTO.setSrcPort((Integer) source.get("src_port"));
-//            distributeTableResponseDTO.setDstPort((Integer) source.get("dst_port"));
-//            distributeTableResponseDTO.setDirection((String) source.get("direction"));
+            distributeTableResponseDTO.setSpanNum((Integer) source.get("span_num"));
 
             distributTableResponseDTOList.add(distributeTableResponseDTO);
         }
-
+//        SearchHit searchHit = hits1[0];
+//        Map<String, Object> sourceAsMap = searchHit.getSourceAsMap();
+//        List<Object> spanList = (List<Object>) sourceAsMap.get("spans");
+//        log.info("vvvvv:{}", spanList.getClass());
+//        for(Object span : spanList) {
+//            Map<String, Object> spanMap = (Map<String, Object>) span;
+//            Map<String, Object> tag = (Map<String, Object>) spanMap.get("tag");
+//            Map<String, Object> context = (Map<String, Object>) spanMap.get("context"); //{trace_id=74eaa6312ca1585, span_id=qFROWrc8Yoqn3LA7P86VETkGndAB5LiUdBqoC2Hp1YF6bkMyvh40kqb0NGhJSGNI, parent_id=sriY4UFGHKuvtGx5oJvWyck93cSZCg2TTaezUFWWIV3ht7S3oLXy0PvGqYDFTwkx, child_ids=[QJBfOLlOgj7HXqHLI4IXM31ixpDrqepWmJGc0lhgpGufhj6i1JehOFYAhtFG72TL]}
+//
+//            Map<String, Object> ebpf_tag = (Map<String, Object>) tag.get("ebpf_tag"); //src_ip=172.20.0.26, src_port=9090, component=UserService, protocol=Thrift, endpoint=ComposeCreatorWithUserId, dst_port=44366, tgid=3008589, pid=1751656, req_seq=0, dst_ip=172.20.0.19, direction=Ingress, resp_seq=1}
+//            log.info("tag: {}", context);
+//
+//        }
 
         pageResult.setTotal(totalCount);
         pageResult.setRecords(distributTableResponseDTOList);
@@ -148,7 +153,7 @@ public class DistributeServiceImpl implements DistributeService {
         );
         // 设置连接IP端口和密码
         RestHighLevelClient client = new RestHighLevelClient(
-                RestClient.builder(new HttpHost("114.215.254.187", 9200, "http"))
+                RestClient.builder(new HttpHost(dbIpStreet, 9200, "http"))
                         .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
         );
         /**
