@@ -111,6 +111,7 @@ public class ViewController {
      */
     @RequestMapping("/distributeList")
     public Result distributeList(@RequestBody DistributeTableQueryDTO distributeTableQueryDTO) throws IOException {
+        log.info("distributeTableQueryDTO{}", distributeTableQueryDTO);
         PageResult pageResult = distributeService.DistributeTableDataQuery(distributeTableQueryDTO);
         Result result = new Result();
         result.setData(pageResult);
