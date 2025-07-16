@@ -1,10 +1,7 @@
 package com.encryption.middle.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.encryption.middle.pojo.dto.DistributTableResponseDTO;
-import com.encryption.middle.pojo.dto.DistributeTableDataDTO;
-import com.encryption.middle.pojo.dto.DistributeTableQueryDTO;
-import com.encryption.middle.pojo.dto.FlamegraphQueryDTO;
+import com.encryption.middle.pojo.dto.*;
 import com.encryption.middle.result.PageResult;
 import com.encryption.middle.service.DistributeService;
 import lombok.extern.slf4j.Slf4j;
@@ -305,6 +302,16 @@ public class DistributeServiceImpl implements DistributeService {
         return pageResult;
     }
 
+    /**
+     *
+     * @param serviceListDTO
+     * @return
+     * @throws IOException
+     */
+    public PageResult ServiceTableDataQuery(ServiceListDTO serviceListDTO) throws IOException {
+        PageResult pageResult = new PageResult();
+        return pageResult;
+    }
     // 打印查询结果
     private void printSearchResults(SearchResponse response) {
         long totalHits = response.getHits().getTotalHits().value;

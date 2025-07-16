@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.encryption.middle.pojo.dto.DistributeTableDataDTO;
 import com.encryption.middle.pojo.dto.DistributeTableQueryDTO;
 import com.encryption.middle.pojo.dto.FlamegraphQueryDTO;
+import com.encryption.middle.pojo.dto.ServiceListDTO;
 import com.encryption.middle.result.PageResult;
 import com.encryption.middle.result.Result;
 import com.encryption.middle.service.DistributeService;
@@ -127,6 +128,14 @@ public class ViewController {
     @RequestMapping("/flamegraphList")
     public Result distributeFlamegraphList(FlamegraphQueryDTO flamegraphQueryDTO) throws IOException {
         PageResult pageResult = distributeService.FlamegraphDataQuery(flamegraphQueryDTO);
+        Result result = new Result();
+        result.setData(pageResult);
+        return result;
+    }
+
+    @RequestMapping("serviceList")
+    public Result serviceMetricList(ServiceListDTO serviceListDTO) throws IOException {
+        PageResult pageResult = distributeService.ServiceTableDataQuery(serviceListDTO);
         Result result = new Result();
         result.setData(pageResult);
         return result;
