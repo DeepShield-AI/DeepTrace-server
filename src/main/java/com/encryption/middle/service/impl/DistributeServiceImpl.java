@@ -133,6 +133,8 @@ public class DistributeServiceImpl implements DistributeService {
             SearchRequest searchRequest = new SearchRequest("traces");
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
+
+
             // 构建布尔查询，支持多条件组合
             BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
@@ -310,6 +312,81 @@ public class DistributeServiceImpl implements DistributeService {
      */
     public PageResult ServiceTableDataQuery(ServiceListDTO serviceListDTO) throws IOException {
         PageResult pageResult = new PageResult();
+        // 创建Elasticsearch客户端连接
+        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY,
+                new UsernamePasswordCredentials("elastic", "netsys204"));
+
+        RestHighLevelClient client = new RestHighLevelClient(
+                RestClient.builder(new HttpHost(dbIpStreet, 9200, "http"))
+                        .setHttpClientConfigCallback(httpClientBuilder ->
+                                httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
+        );
+
+        try {
+            SearchRequest searchRequest = new SearchRequest("traces");
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+            // 构建布尔查询，支持多条件组合
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+
+             //查全部数据
+            sourceBuilder.query(QueryBuilders.matchAllQuery());
+            // 设置分页，从第 0 页开始，每页返回 10 条记录
+            sourceBuilder.from(serviceListDTO.getPage());
+            sourceBuilder.size(serviceListDTO.getPageSize());
+            // 设置查询源
+            searchRequest.source(sourceBuilder);
+
+            // 执行查询
+            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+            // 设置查询源并执行查询
+            searchRequest.source(sourceBuilder);
+
+            // 添加日志输出查询DSL，便于调试
+            log.info("执行的Elasticsearch查询DSL: {}", sourceBuilder.toString());
+
+            SearchHits hits = searchResponse.getHits();
+            TotalHits totalHits = hits.getTotalHits();
+
+            Long totalCount = totalHits.value;
+            SearchHit[] hitsArray = hits.getHits();
+
+            // 处理查询结果
+            List<DistributTableResponseDTO> responseList = new ArrayList<>();
+            for (SearchHit hit : hitsArray) {
+                Map<String, Object> source = hit.getSourceAsMap();
+                DistributTableResponseDTO responseDTO = new DistributTableResponseDTO();
+
+                // 从结果中提取字段
+                responseDTO.setTraceId((String) source.get("trace_id"));
+                responseDTO.setSpanNum((Integer) source.get("span_num"));
+                responseDTO.setE2eDuration((Integer) source.get("e2e_duration"));
+                responseDTO.setEndpoint((String) source.get("endpoint"));
+                responseDTO.setComponentName((String) source.get("component_name"));
+                responseDTO.setServerIp((String) source.get("server_ip"));
+                responseDTO.setServerPort((Integer) source.get("server_port"));
+                responseDTO.setClientIp((String) source.get("client_ip"));
+                responseDTO.setClientPort((Integer) source.get("client_port"));
+                responseDTO.setProtocol((String) source.get("protocol"));
+                responseDTO.setStatusCode((String) source.get("status_code"));
+
+                responseList.add(responseDTO);
+            }
+
+            pageResult.setTotal(totalCount);
+            pageResult.setRecords(responseList);
+
+        } finally {
+            // 确保资源释放
+            try {
+                client.close();
+            } catch (IOException e) {
+                log.error("关闭Elasticsearch客户端失败", e);
+            }
+        }
+
         return pageResult;
     }
     // 打印查询结果
