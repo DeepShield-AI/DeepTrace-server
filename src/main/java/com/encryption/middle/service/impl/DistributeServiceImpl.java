@@ -33,8 +33,8 @@ import java.util.Map;
 @Service
 @Slf4j
 public class DistributeServiceImpl implements DistributeService {
-    final String dbIpStreet = "114.215.254.187"; //47.96.100.108
-
+    final String dbIpStreet = "202.112.237.37"; //47.96.100.108
+    //final String dbIpStreet = "114.215.254.196";
 
     /**
      * 表格数据查询
@@ -128,8 +128,8 @@ public class DistributeServiceImpl implements DistributeService {
                         .setHttpClientConfigCallback(httpClientBuilder ->
                                 httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
         );
-
         try {
+
             SearchRequest searchRequest = new SearchRequest("traces");
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
@@ -229,7 +229,6 @@ public class DistributeServiceImpl implements DistributeService {
                 responseDTO.setClientPort((Integer) source.get("client_port"));
                 responseDTO.setProtocol((String) source.get("protocol"));
                 responseDTO.setStatusCode((String) source.get("status_code"));
-
                 responseList.add(responseDTO);
             }
 
@@ -275,6 +274,7 @@ public class DistributeServiceImpl implements DistributeService {
         );
         /**
          * spans_agent1
+         *
          * test-rps-100-mappings
          * test-rps-100-traces
          */
