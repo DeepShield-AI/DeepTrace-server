@@ -1,4 +1,4 @@
-FROM registry.cn-hangzhou.aliyuncs.com/google_containers/openjdk:17
+FROM registry.cn-hangzhou.aliyuncs.com/acs/openjdk:17
 VOLUME /home/deepserver
 ADD middle-0.0.1-SNAPSHOT.jar deepserver.jar
 EXPOSE 8080
