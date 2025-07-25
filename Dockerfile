@@ -10,7 +10,7 @@ COPY src ./src
 RUN mvn -s settings.xml package -DskipTests && \
     ls -l target/  # 查看生成的JAR
 
-FROM registry.cn-hangzhou.aliyuncs.com/library/openjdk:17-jre-slim
+FROM anolis-registry.cn-zhangjiakou.cr.aliyuncs.com/openanolis/openjdk:17-8.6
 WORKDIR /app
 COPY --from=builder /app/target/middle-0.0.1-SNAPSHOT.jar deepserver.jar
 EXPOSE 8080
