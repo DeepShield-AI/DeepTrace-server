@@ -4,6 +4,6 @@ COPY pom.xml .
 RUN mvn -B dependency:go-offline
 COPY src ./src
 RUN mvn -B package -DskipTests
-COPY --from=builder /app/target/*.jar deepserver.jar
+COPY /app/target/*.jar deepserver.jar
 EXPOSE 8080
 CMD ["java", "-jar", "deepserver.jar"]
