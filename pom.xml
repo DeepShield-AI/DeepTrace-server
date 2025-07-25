@@ -11,6 +11,7 @@
     <groupId>com.encryption</groupId>
     <artifactId>middle</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
     <name>middle</name>
     <description>Demo project for Spring Boot</description>
     <url/>
@@ -20,6 +21,12 @@
     <developers>
         <developer/>
     </developers>
+    <modules>
+        <module>deeptrace-search</module>
+        <module>deeptrace-insfrastructure</module>
+        <module>deeptrace-service</module>
+        <module>strat</module>
+    </modules>
     <scm>
         <connection/>
         <developerConnection/>
