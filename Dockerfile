@@ -1,4 +1,6 @@
 FROM maven:3.6.3-jdk-11 AS builder
+ENV MAVEN_OPTS="-Dmaven.repo.local=/usr/share/maven/ref/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -Djava.awt.headless=true -Dmaven.repo.remote=https://maven.aliyun.com/repository/public/"
+
 WORKDIR /app
 COPY pom.xml .
 RUN mvn -B dependency:go-offline
