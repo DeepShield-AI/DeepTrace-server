@@ -1,0 +1,16 @@
+<settings>
+    <servers>
+        <server>
+            <id>aliyun-repo</id>
+            <username>aliyun6895407878</username>
+            <password>1qaz2wsx</password>
+        </server>
+    </servers>
+    <mirrors>
+        <mirror>
+            <id>aliyun-repo</id>
+            <mirrorOf>*</mirrorOf>
+            <url>https://maven.aliyun.com/repository/public</url>
+        </mirror>
+    </mirrors>
+</settings>
