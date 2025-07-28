@@ -1,9 +1,7 @@
 FROM registry.cn-hangzhou.aliyuncs.com/acs/maven:latest AS builder
-COPY settings.xml /root/.m2/settings.xml
 
 WORKDIR /app
 COPY pom.xml .
-RUN mvn -B dependency:go-offline
 COPY src ./src
 RUN mvn -B package -DskipTests
 
