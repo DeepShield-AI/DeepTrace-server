@@ -1,4 +1,4 @@
-FROM registry.cn-hangzhou.aliyuncs.com/acs/maven:latest AS builder
+FROM docker.xuanyuan.me/library/maven:3.9.11 AS builder
 
 WORKDIR /app
 COPY pom.xml .
