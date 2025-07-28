@@ -105,7 +105,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version> <!-- 使用兼容你当前 Maven 版本的插件 -->
+                <version>3.11.0</version> <!-- 使用兼容你当前 Maven 版本的插件 -->
+                <configuration>
+                    <!-- 传统配置方式 -->
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <!-- 可选：指定编码 -->
+                    <encoding>UTF-8</encoding>
+                </configuration>
             </plugin>
         </plugins>
     </build>

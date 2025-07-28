@@ -1,6 +1,4 @@
-FROM registry.cn-hangzhou.aliyuncs.com/acs/maven:3.9.6-jdk-17 AS builder
-RUN mkdir -p /etc/docker && \
-    echo '{"registry-mirrors":["https://xb7xmcmw.mirror.aliyuncs.com"]}' > /etc/docker/daemon.json
+FROM  docker.xuanyuan.me/library/maven:3.9.11-ibm-semeru-17-noble AS builder
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
