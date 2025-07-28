@@ -1,4 +1,4 @@
-FROM  maven:3.9.11-ibm-semeru-17-noble AS builder
+FROM  docker.xuanyuan.me/library/maven:3.9.11-ibm-semeru-17-noble AS builder
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
