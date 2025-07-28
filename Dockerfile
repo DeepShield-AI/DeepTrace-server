@@ -1,4 +1,4 @@
-FROM maven:3.9.6-jdk-17 AS builder
+FROM registry.cn-hangzhou.aliyuncs.com/acs/maven:3.9.6-jdk-17 AS builder
 RUN mkdir -p /etc/docker && \
     echo '{"registry-mirrors":["https://xb7xmcmw.mirror.aliyuncs.com"]}' > /etc/docker/daemon.json
 WORKDIR /app
