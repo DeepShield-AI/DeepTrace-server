@@ -21,7 +21,7 @@ public class EsAgentLogController {
     @Autowired
     private EsAgentLogService esAgentLogService;
 
-    @RequestMapping(value = "/search/simple", method = RequestMethod.GET)
+    @RequestMapping(value = "/search", method = RequestMethod.GET)
     public ResponseEntity<List<AgentLog>> search(@RequestParam(required = false) String keyword,
                                              @RequestParam(required = false, defaultValue = "0") Integer pageNum,
                                              @RequestParam(required = false, defaultValue = "5") Integer pageSize) {
