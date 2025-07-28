@@ -13,6 +13,9 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 
+/**
+ * 运行日志
+ */
 @Data
 @EqualsAndHashCode
 @Document(indexName = "agent_log")
