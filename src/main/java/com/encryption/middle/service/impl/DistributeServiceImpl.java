@@ -27,14 +27,15 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 @Slf4j
 public class DistributeServiceImpl implements DistributeService {
-    final String dbIpStreet = "202.112.237.37"; //47.96.100.108
-    //final String dbIpStreet = "114.215.254.196";
+    //final String dbIpStreet = "202.112.237.37"; //47.96.100.108
+    final String dbIpStreet = "114.215.254.187";
 
     /**
      * 表格数据查询
@@ -132,9 +133,6 @@ public class DistributeServiceImpl implements DistributeService {
 
             SearchRequest searchRequest = new SearchRequest("traces");
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-
-
-
             // 构建布尔查询，支持多条件组合
             BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
@@ -294,10 +292,22 @@ public class DistributeServiceImpl implements DistributeService {
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
         SearchHit[] hits = searchResponse.getHits().getHits();
+        log.info("ServerInfo=={}", hits);
+
+
         for(SearchHit hit : hits) {
             Map<String, Object> source = hit.getSourceAsMap();
             ArrayList spans = (ArrayList) source.get("spans");
+            Map<String, Object> data = new HashMap<>();
+            Object topology = (Object) source.get("topology");
+            Object components = (Object) source.get("components");
+
+            data.put("topology", topology);
+            data.put("components", components);
+
+
             pageResult.setRecords(spans);
+            pageResult.setData(data);
         }
 //        pageResult.setData(searchResponse.getHits().getHits());
 //        log.info("测试2{}", searchResponse.getHits().getHits());
