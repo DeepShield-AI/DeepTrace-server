@@ -1,10 +1,8 @@
 package com.qcl.service;
 
 import com.qcl.entity.AgentBasic;
-import com.qcl.entity.AgentLog;
-
-import java.util.List;
+import com.qcl.result.PageResult;
 
 public interface EsAgentBasicService {
-    List<AgentBasic> search(String keyword, Integer pageNum, Integer pageSize);
+    PageResult<AgentBasic> search(String keyword, Integer pageNum, Integer pageSize);
 }
