@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qcl.dao.CollectorUserConfigDao">
+
+    <resultMap type="com.qcl.entity.CollectorUserConfig" id="CollectorUserConfigMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="configId" column="config_id" jdbcType="VARCHAR"/>
+        <result property="groupId" column="group_id" jdbcType="VARCHAR"/>
+        <result property="groupName" column="group_name" jdbcType="VARCHAR"/>
+        <result property="teamName" column="team_name" jdbcType="VARCHAR"/>
+        <result property="maxCpus" column="max_cpus" jdbcType="INTEGER"/>
+        <result property="maxMemory" column="max_memory" jdbcType="INTEGER"/>
+        <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+        <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!--查询单个-->
+    <select id="queryById" resultMap="CollectorUserConfigMap">
+        select
+            id, config_id, group_id, group_name, team_name, max_cpus, max_memory, created_at, updated_at
+        from collector_user_config
+        where id = #{id}
+    </select>
+
+    <!--查询指定行数据-->
+    <select id="queryAllByLimit" resultMap="CollectorUserConfigMap">
+        select
+            id, config_id, group_id, group_name, team_name, max_cpus, max_memory, created_at, updated_at,collectionPort
+        from collector_user_config
+        <where>
+            <if test="config.id != null">
+                and id = #{config.id}
+            </if>
+            <if test="config.configId != null and config.configId != ''">
+                and config_id = #{config.configId}
+            </if>
+            <if test="config.groupId != null and config.groupId != ''">
+                and group_id = #{config.groupId}
+            </if>
+            <if test="config.groupName != null and config.groupName != ''">
+                and group_name = #{config.groupName}
+            </if>
+            <if test="config.teamName != null and config.teamName != ''">
+                and team_name = #{config.teamName}
+            </if>
+            <if test="config.maxCpus != null">  <!-- 改为 config.maxCpus -->
+                and max_cpus = #{config.maxCpus}
+            </if>
+            <if test="config.maxMemory != null">  <!-- 改为 config.maxMemory -->
+                and max_memory = #{config.maxMemory}
+            </if>
+            <if test="config.createdAt != null">  <!-- 改为 config.createdAt -->
+                and created_at = #{config.createdAt}
+            </if>
+            <if test="config.updatedAt != null">  <!-- 改为 config.updatedAt -->
+                and updated_at = #{config.updatedAt}
+            </if>
+        </where>
+        limit #{pageable.offset}, #{pageable.pageSize}
+    </select>
+
+
+    <!--统计总行数-->
+    <select id="count" resultType="java.lang.Long">
+        select count(1)
+        from collector_user_config
+        <where>
+            <if test="id != null">
+                and id = #{id}
+            </if>
+            <if test="configId != null and configId != ''">
+                and config_id = #{configId}
+            </if>
+            <if test="groupId != null and groupId != ''">
+                and group_id = #{groupId}
+            </if>
+            <if test="groupName != null and groupName != ''">
+                and group_name = #{groupName}
+            </if>
+            <if test="teamName != null and teamName != ''">
+                and team_name = #{teamName}
+            </if>
+            <if test="maxCpus != null">
+                and max_cpus = #{maxCpus}
+            </if>
+            <if test="maxMemory != null">
+                and max_memory = #{maxMemory}
+            </if>
+            <if test="createdAt != null">
+                and created_at = #{createdAt}
+            </if>
+            <if test="updatedAt != null">
+                and updated_at = #{updatedAt}
+            </if>
+        </where>
+    </select>
+
+    <!--新增所有列-->
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into collector_user_config(config_id, group_id, group_name, team_name, max_cpus, max_memory, user_id, collection_port)
+        values (#{configId}, #{groupId}, #{groupName}, #{teamName}, #{maxCpus}, #{maxMemory}, #{userId}, #{collectionPort})
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into collector_user_config(config_id, group_id, group_name, team_name, max_cpus, max_memory, created_at, updated_at)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+        (#{entity.configId}, #{entity.groupId}, #{entity.groupName}, #{entity.teamName}, #{entity.maxCpus}, #{entity.maxMemory}, #{entity.createdAt}, #{entity.updatedAt})
+        </foreach>
+    </insert>
+
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into collector_user_config(config_id, group_id, group_name, team_name, max_cpus, max_memory, created_at, updated_at)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.configId}, #{entity.groupId}, #{entity.groupName}, #{entity.teamName}, #{entity.maxCpus}, #{entity.maxMemory}, #{entity.createdAt}, #{entity.updatedAt})
+        </foreach>
+        on duplicate key update
+config_id = values(config_id),
+group_id = values(group_id),
+group_name = values(group_name),
+team_name = values(team_name),
+max_cpus = values(max_cpus),
+max_memory = values(max_memory),
+created_at = values(created_at),
+updated_at = values(updated_at)
+    </insert>
+
+    <!--通过主键修改数据-->
+    <update id="update">
+        update collector_user_config
+        <set>
+            <if test="maxCpus != null">
+                max_cpus = #{maxCpus},
+            </if>
+            <if test="maxMemory != null">
+                max_memory = #{maxMemory},
+            </if>
+            <if test="collectionPort != null">
+                collection_port = #{collectionPort},
+            </if>
+            <if test="updatedAt != null">
+                updated_at = #{updatedAt},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--通过主键删除-->
+    <delete id="deleteById">
+        delete from collector_user_config where id = #{id}
+    </delete>
+
+</mapper>
+
