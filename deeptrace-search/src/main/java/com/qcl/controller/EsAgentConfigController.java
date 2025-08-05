@@ -2,9 +2,7 @@ package com.qcl.controller;
 
 
 import com.qcl.entity.AgentConfig;
-import com.qcl.entity.AgentLog;
 import com.qcl.service.EsAgentConfigService;
-import com.qcl.service.EsAgentLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;

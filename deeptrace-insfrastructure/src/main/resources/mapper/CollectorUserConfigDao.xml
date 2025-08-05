@@ -25,7 +25,7 @@
     <!--查询指定行数据-->
     <select id="queryAllByLimit" resultMap="CollectorUserConfigMap">
         select
-            id, config_id, group_id, group_name, team_name, max_cpus, max_memory, created_at, updated_at,collectionPort
+            id, config_id, group_id, group_name, team_name, max_cpus, max_memory, created_at, updated_at,collection_port
         from collector_user_config
         <where>
             <if test="config.id != null">

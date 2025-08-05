@@ -24,6 +24,10 @@ public class CollectorUserConfigController {
      */
     @Autowired
     private CollectorUserConfigService collectorUserConfigService;
+    @GetMapping("/valid")
+    public ResponseEntity<String> queryByPage() {
+        return ResponseEntity.ok("success");
+    }
 
     /**
      * 分页查询 http://localhost:8887/api/user/config/queryByPage?pageNumber=0&pageSize=10

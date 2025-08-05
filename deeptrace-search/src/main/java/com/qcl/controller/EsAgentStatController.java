@@ -1,8 +1,6 @@
 package com.qcl.controller;
 
-import com.qcl.entity.AgentLog;
 import com.qcl.entity.AgentStat;
-import com.qcl.service.EsAgentLogService;
 import com.qcl.service.EsAgentStatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

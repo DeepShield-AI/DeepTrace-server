@@ -1,5 +1,9 @@
 package com.qcl.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -9,7 +13,10 @@ import java.util.Date;
  * @author makejava
  * @since 2025-07-10 10:19:48
  */
+@Setter
+@Getter
 public class CollectorUserConfig implements Serializable {
+    @Serial
     private static final long serialVersionUID = 827792852025052156L;
 /**
      * 主键ID
@@ -49,85 +56,5 @@ public class CollectorUserConfig implements Serializable {
     private String collectionPort;
 
 
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public String getConfigId() {
-        return configId;
-    }
-
-    public void setConfigId(String configId) {
-        this.configId = configId;
-    }
-
-    public String getGroupId() {
-        return groupId;
-    }
-
-    public void setGroupId(String groupId) {
-        this.groupId = groupId;
-    }
-
-    public String getGroupName() {
-        return groupName;
-    }
-
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
-    }
-
-    public String getTeamName() {
-        return teamName;
-    }
-
-    public void setTeamName(String teamName) {
-        this.teamName = teamName;
-    }
-
-    public Integer getMaxCpus() {
-        return maxCpus;
-    }
-
-    public void setMaxCpus(Integer maxCpus) {
-        this.maxCpus = maxCpus;
-    }
-
-    public Integer getMaxMemory() {
-        return maxMemory;
-    }
-
-    public void setMaxMemory(Integer maxMemory) {
-        this.maxMemory = maxMemory;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Date getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Date updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-
-    public String getCollectionPort() {
-        return collectionPort;
-    }
-
-    public void setCollectionPort(String collectionPort) {
-        this.collectionPort = collectionPort;
-    }
 }
 
