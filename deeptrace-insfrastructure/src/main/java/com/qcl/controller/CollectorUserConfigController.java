@@ -74,7 +74,7 @@ public class CollectorUserConfigController {
      * @param collectorUserConfig 实体
      * @return 编辑结果
      */
-    @PutMapping("edit")
+    @PutMapping("/edit")
     public ResponseEntity<CollectorUserConfig> edit(CollectorUserConfig collectorUserConfig) {
         return ResponseEntity.ok(this.collectorUserConfigService.update(collectorUserConfig));
     }
@@ -85,7 +85,7 @@ public class CollectorUserConfigController {
      * @param id 主键
      * @return 删除是否成功
      */
-    @DeleteMapping("delete")
+    @DeleteMapping("/delete")
     public ResponseEntity<Boolean> deleteById(Integer id) {
         return ResponseEntity.ok(this.collectorUserConfigService.deleteById(id));
     }
