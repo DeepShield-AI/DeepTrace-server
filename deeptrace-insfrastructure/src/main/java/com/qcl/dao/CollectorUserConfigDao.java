@@ -22,7 +22,7 @@ public interface CollectorUserConfigDao {
      * @param id 主键
      * @return 实例对象
      */
-    CollectorUserConfig queryById(Integer id);
+    CollectorUserConfig queryById(Long id);
 
     /**
      * 查询指定行数据
@@ -30,7 +30,7 @@ public interface CollectorUserConfigDao {
      * @param pageable         分页对象
      * @return 对象列表
      */
-    List<CollectorUserConfig> queryAllByLimit( @Param("config") CollectorUserConfig config, @Param("pageable") Pageable pageable);
+    List<CollectorUserConfig> queryAllByLimit(@Param("config") CollectorUserConfig config, @Param("pageable") Pageable pageable);
 
     /**
      * 统计总行数
@@ -79,7 +79,6 @@ public interface CollectorUserConfigDao {
      * @param id 主键
      * @return 影响行数
      */
-    int deleteById(Integer id);
+    int deleteById(Long id);
 
 }
-
