@@ -34,8 +34,8 @@ import java.util.Map;
 @Service
 @Slf4j
 public class DistributeServiceImpl implements DistributeService {
-    //final String dbIpStreet = "202.112.237.37"; //47.96.100.108
-    final String dbIpStreet = "114.215.254.187";
+    final String dbIpStreet = "202.112.237.37"; //47.96.100.108
+    //final String dbIpStreet = "114.215.254.187";
 
     /**
      * 表格数据查询
@@ -122,7 +122,9 @@ public class DistributeServiceImpl implements DistributeService {
         // 创建Elasticsearch客户端连接
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(AuthScope.ANY,
-                new UsernamePasswordCredentials("elastic", "netsys204"));
+//                new UsernamePasswordCredentials("elastic", "netsys204"));
+        new UsernamePasswordCredentials("elastic", "deeptrace123"));
+
 
         RestHighLevelClient client = new RestHighLevelClient(
                 RestClient.builder(new HttpHost(dbIpStreet, 9200, "http"))
@@ -263,7 +265,7 @@ public class DistributeServiceImpl implements DistributeService {
         // 创建请求凭证
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(AuthScope.ANY,
-                new UsernamePasswordCredentials("elastic", "netsys204")
+                new UsernamePasswordCredentials("elastic", "deeptrace123")
         );
         // 设置连接IP端口和密码
         RestHighLevelClient client = new RestHighLevelClient(
