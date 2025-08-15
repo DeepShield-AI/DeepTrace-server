@@ -192,7 +192,7 @@ public class DistributeServiceImpl implements DistributeService {
             } else {
                 sourceBuilder.query(QueryBuilders.matchAllQuery());
                 // 设置分页参数
-                sourceBuilder.from(queryDTO.getPage());
+                sourceBuilder.from((queryDTO.getPage() - 1) * queryDTO.getPageSize());
                 sourceBuilder.size(queryDTO.getPageSize());
             }
 
