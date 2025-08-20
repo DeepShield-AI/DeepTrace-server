@@ -5,52 +5,43 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 /**
- * 采集器配置表（用户添加）(CollectorUserConfig)表服务接口
- *
- * @author makejava
- * @since 2025-07-10 10:19:49
+ * 采集器配置服务接口
  */
 public interface CollectorUserConfigService {
 
     /**
-     * 通过ID查询单条数据
-     *
+     * 根据主键查询
      * @param id 主键
-     * @return 实例对象
+     * @return 配置对象
      */
-    CollectorUserConfig queryById(Integer id);
+    CollectorUserConfig queryById(Long id);
 
     /**
-     * 分页查询
-     *
-     * @param collectorUserConfig 筛选条件
-     * @param pageRequest      分页对象
-     * @return 查询结果
+     * 分页条件查询
+     * @param collectorUserConfig 查询条件
+     * @param pageRequest 分页参数
+     * @return 分页结果
      */
     Page<CollectorUserConfig> queryByPage(CollectorUserConfig collectorUserConfig, PageRequest pageRequest);
 
     /**
-     * 新增数据
-     *
-     * @param collectorUserConfig 实例对象
-     * @return 实例对象
+     * 新增配置
+     * @param collectorUserConfig 配置对象
+     * @return 新增后的对象
      */
     CollectorUserConfig insert(CollectorUserConfig collectorUserConfig);
 
     /**
-     * 修改数据
-     *
-     * @param collectorUserConfig 实例对象
-     * @return 实例对象
+     * 编辑配置
+     * @param collectorUserConfig 配置对象
+     * @return 更新后的对象
      */
     CollectorUserConfig update(CollectorUserConfig collectorUserConfig);
 
     /**
-     * 通过主键删除数据
-     *
+     * 删除配置
      * @param id 主键
-     * @return 是否成功
+     * @return 删除是否成功
      */
-    boolean deleteById(Integer id);
-
+    boolean deleteById(Long id);
 }
