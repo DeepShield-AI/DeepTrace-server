@@ -20,14 +20,21 @@ public class QueryTracesParam {
      * 请求的开始时间，值为秒级时间戳
      */
     private Long startTime;
+
     private String containerName;
+    /**
+     * 最低响应时间
+     */
     private Long minE2eDuration;
+    /**
+     * 最高响应时间
+     */
     private Long maxE2eDuration;
 
     private Integer pageNo;
     private Integer pageSize;
 
-
+    //排序字段
     private String sortBy;
 
     //desc asc
