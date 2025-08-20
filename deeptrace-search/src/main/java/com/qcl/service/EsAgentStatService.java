@@ -1,11 +1,9 @@
 package com.qcl.service;
 
-import com.qcl.entity.AgentLog;
-import com.qcl.entity.AgentStat;
-
+import com.qcl.dto.StatItem;
 import java.util.List;
+import java.util.Map;
 
 public interface EsAgentStatService {
-
-    List<AgentStat> search(String keyword);
+    Map<String, List<StatItem>> searchStatItems(String startTime, String endTime, String agentName);
 }
