@@ -15,6 +15,11 @@ public class QueryTracesParam {
      * 响应状态
      */
     private List<String> status;
+
+    /**
+     * 请求的开始时间，值为秒级时间戳
+     */
+    private Long startTime;
     private String containerName;
     private Long minE2eDuration;
     private Long maxE2eDuration;
