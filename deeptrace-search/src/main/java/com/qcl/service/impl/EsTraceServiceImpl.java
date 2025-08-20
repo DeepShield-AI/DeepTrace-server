@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.entity.Traces;
 import com.qcl.entity.param.QueryTracesParam;
@@ -30,7 +31,7 @@ public class EsTraceServiceImpl implements EsTraceService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
-    public List<Traces> queryByPage2(QueryTracesParam queryTracesParam) {
+    public List<Traces> queryByPage(QueryTracesParam queryTracesParam) {
         try {
             // 1. 构建嵌套查询条件
             List<Query> spanMustConditions = new ArrayList<>();
@@ -45,7 +46,7 @@ public class EsTraceServiceImpl implements EsTraceService {
                 ));
             }
 
-            // traceIds 条件
+            // traceId条件
             if (queryTracesParam.getTraceId() != null && !queryTracesParam.getTraceId().isEmpty()) {
                 spanMustConditions.add(Query.of(q -> q
                         .term(t -> t
@@ -75,7 +76,7 @@ public class EsTraceServiceImpl implements EsTraceService {
             if (queryTracesParam.getProtocol() != null && !queryTracesParam.getProtocol().isEmpty()) {
                 mainMustConditions.add(Query.of(q -> q
                         .terms(t -> t
-                                .field("protocol")
+                                .field("protocol.keyword")
                                 .terms(t2 -> t2.value(
                                         queryTracesParam.getProtocol().stream()
                                                 .map(FieldValue::of)
@@ -84,7 +85,51 @@ public class EsTraceServiceImpl implements EsTraceService {
                         )
                 ));
             }
+            // status 条件
+            if (queryTracesParam.getStatus() != null && !queryTracesParam.getStatus().isEmpty()) {
+                mainMustConditions.add(Query.of(q -> q
+                        .terms(t -> t
+                                .field("status_code.keyword")
+                                .terms(t2 -> t2.value(
+                                        queryTracesParam.getStatus().stream()
+                                                .map(FieldValue::of)
+                                                .collect(Collectors.toList())
+                                ))
+                        )
+                ));
+            }
 
+            // resp 条件（用于 e2e_duration 范围查询）
+            // e2e_duration 范围查询条件
+            if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
+                mainMustConditions.add(Query.of(q -> q
+                        .range(r -> r
+                                .term(t-> t
+                                        .field("e2e_duration")
+                                        .gte(queryTracesParam.getMinE2eDuration().toString())
+                                        .lte(queryTracesParam.getMaxE2eDuration().toString())
+                                )
+                        )
+                ));
+            } else if (queryTracesParam.getMinE2eDuration() != null) {
+                mainMustConditions.add(Query.of(q -> q
+                        .range(r -> r
+                                .term(t-> t
+                                        .field("e2e_duration")
+                                        .gte(queryTracesParam.getMinE2eDuration().toString())
+                                )
+                        )
+                ));
+            } else if (queryTracesParam.getMaxE2eDuration() != null) {
+                mainMustConditions.add(Query.of(q -> q
+                        .range(r -> r
+                                .term(t-> t
+                                        .field("e2e_duration")
+                                        .lte(queryTracesParam.getMaxE2eDuration().toString())
+                                )
+                        )
+                ));
+            }
 
 
             // 3. 构建最终查询
@@ -92,12 +137,42 @@ public class EsTraceServiceImpl implements EsTraceService {
                     .bool(b -> b.must(mainMustConditions))
             );
 
+            // 4.构建动态排序条件
+            List<co.elastic.clients.elasticsearch._types.SortOptions> sortOptions = new ArrayList<>();
 
+            if (queryTracesParam.getSortBy() != null && !queryTracesParam.getSortBy().isEmpty()) {
+                co.elastic.clients.elasticsearch._types.SortOrder order =
+                        "desc".equalsIgnoreCase(queryTracesParam.getSortOrder()) ?
+                                co.elastic.clients.elasticsearch._types.SortOrder.Desc :
+                                co.elastic.clients.elasticsearch._types.SortOrder.Asc;
+
+                sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(so -> so
+                        .field(f -> f
+                                .field(queryTracesParam.getSortBy())
+                                .order(order)
+                        )
+                ));
+            } else {
+                // 默认排序
+                sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(so -> so
+                        .field(f -> f
+                                .field("start_time")
+                                .order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)
+                        )
+                ));
+            }
 
             // 5. 执行查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index("traces")
                             .query(finalQuery)
+                            .sort(so -> so
+                                    .field(f -> f
+                                            .field("start_time")
+                                            .order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)
+                                    )
+                            )
+                            .size(50)
                             .source(src -> src
                                     .filter(f -> f
                                             .excludes("topology", "components")
@@ -107,9 +182,10 @@ public class EsTraceServiceImpl implements EsTraceService {
             );
 
             // 6. 提取结果
-            return response.hits().hits().stream()
+            List<Traces> traces =  response.hits().hits().stream()
                     .map(Hit::source)
                     .collect(Collectors.toList());
+            return traces;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -117,107 +193,4 @@ public class EsTraceServiceImpl implements EsTraceService {
         }
     }
 
-
-    public  List<Traces> queryByPage(QueryTracesParam queryTracesParam) {
-        List<String> traceIds = List.of(
-                "12248920362114992407","30977720884229318799"
-        );
-
-        try {
-            // 1. 构建嵌套查询
-            Query nestedQuery = Query.of(q -> q
-                    .nested(n -> n
-                            .path("spans")
-                            .query(nq -> nq
-                                    .bool(b -> b
-                                            .must(m -> m
-                                                    .term(t -> t
-                                                            .field("spans.tag.docker_tag.container_name.keyword")
-                                                            .value("/service1")
-                                                    )
-                                            )
-                                            .must(m -> m
-                                                    .terms(t -> t
-                                                            .field("spans.context.trace_id")
-                                                            .terms(t2 -> t2.value(
-                                                                    traceIds.stream()
-                                                                            .map(FieldValue::of)
-                                                                            .collect(Collectors.toList())
-                                                            ))
-                                                    )
-                                            )
-                                    )
-                            )
-                    )
-            );
-
-
-            // 3. 执行查询
-            SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces")
-                            .query(nestedQuery)
-                            .source(src -> src
-                                    .filter(f -> f
-                                            .excludes("topology", "components")
-                                    )
-                            ),
-                    Traces.class
-            );
-
-            // 4. 提取结果
-            List<Traces> traces =  response.hits().hits().stream()
-                    .map(Hit::source)
-                    .collect(Collectors.toList());
-            return traces;
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error executing Elasticsearch query", e);
-        }
-    }
-
-    /*public SearchHits<Traces> queryByPage() {
-        List<String> traceIds = List.of("12248920362114992407","30977720884229318799");
-            // 1. 构建嵌套查询
-            Query nestedQuery = Query.of(q -> q
-                    .nested(n -> n
-                            .path("spans")
-                            .query(nq -> nq
-                                    .bool(b -> b
-                                            .must(m -> m
-                                                    .term(t -> t
-                                                            .field("spans.tag.docker_tag.container_name.keyword")
-                                                            .value("/service1")
-                                                    )
-                                            )
-                                            .must(m -> m
-                                                    .terms(t -> t
-                                                            .field("spans.context.trace_id")
-                                                            .terms(t2 -> t2.value(traceIds.stream().map(v ->
-                                                                    FieldValue.of(v)).toList()))
-                                                    )
-                                            )
-                                    )
-                            )
-                    )
-            );
-
-            // 2. 构建完整查询
-            NativeQuery searchQuery = new NativeQueryBuilder()
-                    .withQuery(nestedQuery)
-                    .build();
-
-        // 3. 打印查询语句
-        try {
-            String queryString = objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(nestedQuery.term());
-            System.out.println("Elasticsearch Query: " + queryString);
-        } catch (Exception e) {
-            System.err.println("Failed to serialize query: " + e.getMessage());
-        }
-
-
-        // 3. 执行查询并返回结果
-        Object result =  elasticsearchOperations.search(searchQuery, Traces.class);
-            return elasticsearchOperations.search(searchQuery, Traces.class);
-    }*/
 }

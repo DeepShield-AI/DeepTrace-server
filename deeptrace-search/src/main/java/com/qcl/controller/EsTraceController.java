@@ -21,7 +21,7 @@ public class EsTraceController {
     @Autowired
     private EsTraceService esTraceService;
     @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
-    public ResponseEntity< List<Traces>> search(@RequestParam(required = false)QueryTracesParam queryTracesParam) {
+    public ResponseEntity< List<Traces>> search(QueryTracesParam queryTracesParam) {
         List<Traces> traces = esTraceService.queryByPage(queryTracesParam);
         return ResponseEntity.ok(traces);
     }

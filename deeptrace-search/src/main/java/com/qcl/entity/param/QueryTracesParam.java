@@ -21,4 +21,10 @@ public class QueryTracesParam {
 
     private Integer pageNo;
     private Integer pageSize;
+
+
+    private String sortBy;
+
+    //desc asc
+    private String sortOrder;
 }
