@@ -2,12 +2,18 @@ package com.qcl.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.entity.Traces;
 import com.qcl.entity.param.QueryTracesParam;
+import com.qcl.entity.statistic.TimeBucketResult;
+import com.qcl.entity.statistic.*;
 import com.qcl.service.EsTraceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
@@ -31,111 +37,10 @@ public class EsTraceServiceImpl implements EsTraceService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
+
     public List<Traces> queryByPage(QueryTracesParam queryTracesParam) {
         try {
-            // 1. 构建嵌套查询条件
-            List<Query> spanMustConditions = new ArrayList<>();
-
-            // containerName 条件
-            if (queryTracesParam.getContainerName() != null && !queryTracesParam.getContainerName().isEmpty()) {
-                spanMustConditions.add(Query.of(q -> q
-                        .term(t -> t
-                                .field("spans.tag.docker_tag.container_name.keyword")
-                                .value(queryTracesParam.getContainerName())
-                        )
-                ));
-            }
-
-            // traceId条件
-            if (queryTracesParam.getTraceId() != null && !queryTracesParam.getTraceId().isEmpty()) {
-                spanMustConditions.add(Query.of(q -> q
-                        .term(t -> t
-                                .field("spans.context.trace_id")
-                                .value(queryTracesParam.getTraceId())
-                        )
-                ));
-            }
-
-            // 2. 构建主查询条件
-            List<Query> mainMustConditions = new ArrayList<>();
-
-            // 嵌套查询
-            if (!spanMustConditions.isEmpty()) {
-                Query nestedQuery = Query.of(q -> q
-                        .nested(n -> n
-                                .path("spans")
-                                .query(nq -> nq
-                                        .bool(b -> b.must(spanMustConditions))
-                                )
-                        )
-                );
-                mainMustConditions.add(nestedQuery);
-            }
-
-            // protocol 条件
-            if (queryTracesParam.getProtocol() != null && !queryTracesParam.getProtocol().isEmpty()) {
-                mainMustConditions.add(Query.of(q -> q
-                        .terms(t -> t
-                                .field("protocol.keyword")
-                                .terms(t2 -> t2.value(
-                                        queryTracesParam.getProtocol().stream()
-                                                .map(FieldValue::of)
-                                                .collect(Collectors.toList())
-                                ))
-                        )
-                ));
-            }
-            // status 条件
-            if (queryTracesParam.getStatus() != null && !queryTracesParam.getStatus().isEmpty()) {
-                mainMustConditions.add(Query.of(q -> q
-                        .terms(t -> t
-                                .field("status_code.keyword")
-                                .terms(t2 -> t2.value(
-                                        queryTracesParam.getStatus().stream()
-                                                .map(FieldValue::of)
-                                                .collect(Collectors.toList())
-                                ))
-                        )
-                ));
-            }
-
-            // resp 条件（用于 e2e_duration 范围查询）
-            // e2e_duration 范围查询条件
-            if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
-                mainMustConditions.add(Query.of(q -> q
-                        .range(r -> r
-                                .term(t-> t
-                                        .field("e2e_duration")
-                                        .gte(queryTracesParam.getMinE2eDuration().toString())
-                                        .lte(queryTracesParam.getMaxE2eDuration().toString())
-                                )
-                        )
-                ));
-            } else if (queryTracesParam.getMinE2eDuration() != null) {
-                mainMustConditions.add(Query.of(q -> q
-                        .range(r -> r
-                                .term(t-> t
-                                        .field("e2e_duration")
-                                        .gte(queryTracesParam.getMinE2eDuration().toString())
-                                )
-                        )
-                ));
-            } else if (queryTracesParam.getMaxE2eDuration() != null) {
-                mainMustConditions.add(Query.of(q -> q
-                        .range(r -> r
-                                .term(t-> t
-                                        .field("e2e_duration")
-                                        .lte(queryTracesParam.getMaxE2eDuration().toString())
-                                )
-                        )
-                ));
-            }
-
-
-            // 3. 构建最终查询
-            Query finalQuery = Query.of(q -> q
-                    .bool(b -> b.must(mainMustConditions))
-            );
+            Query finalQuery = buildQuery(queryTracesParam);
 
             // 4.构建动态排序条件
             List<co.elastic.clients.elasticsearch._types.SortOptions> sortOptions = new ArrayList<>();
@@ -162,10 +67,17 @@ public class EsTraceServiceImpl implements EsTraceService {
                 ));
             }
 
+            //临时深分页 TODO
+            int pageNo = queryTracesParam.getPageNo() != null ? queryTracesParam.getPageNo() : 1;
+            int pageSize = queryTracesParam.getPageSize() != null ? queryTracesParam.getPageSize() : 10;
+            int from = (pageNo - 1) * pageSize;
+
             // 5. 执行查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index("traces")
                             .query(finalQuery)
+                            .from(from)
+                            .size(pageSize)
                             .sort(so -> so
                                     .field(f -> f
                                             .field("start_time")
@@ -192,5 +104,116 @@ public class EsTraceServiceImpl implements EsTraceService {
             throw new RuntimeException("Error executing Elasticsearch query", e);
         }
     }
+
+
+
+
+    private Query buildQuery(QueryTracesParam queryTracesParam) {
+        // 1. 构建嵌套查询条件
+        List<Query> spanMustConditions = new ArrayList<>();
+
+        // containerName 条件
+        if (queryTracesParam.getContainerName() != null && !queryTracesParam.getContainerName().isEmpty()) {
+            spanMustConditions.add(Query.of(q -> q
+                    .term(t -> t
+                            .field("spans.tag.docker_tag.container_name.keyword")
+                            .value(queryTracesParam.getContainerName())
+                    )
+            ));
+        }
+
+        // traceId条件
+        if (queryTracesParam.getTraceId() != null && !queryTracesParam.getTraceId().isEmpty()) {
+            spanMustConditions.add(Query.of(q -> q
+                    .term(t -> t
+                            .field("spans.context.trace_id")
+                            .value(queryTracesParam.getTraceId())
+                    )
+            ));
+        }
+
+        // 2. 构建主查询条件
+        List<Query> mainMustConditions = new ArrayList<>();
+
+        // 嵌套查询
+        if (!spanMustConditions.isEmpty()) {
+            Query nestedQuery = Query.of(q -> q
+                    .nested(n -> n
+                            .path("spans")
+                            .query(nq -> nq
+                                    .bool(b -> b.must(spanMustConditions))
+                            )
+                    )
+            );
+            mainMustConditions.add(nestedQuery);
+        }
+
+        // protocol 条件
+        if (queryTracesParam.getProtocol() != null && !queryTracesParam.getProtocol().isEmpty()) {
+            mainMustConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("protocol.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getProtocol().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+        // status 条件
+        if (queryTracesParam.getStatus() != null && !queryTracesParam.getStatus().isEmpty()) {
+            mainMustConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("status_code.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getStatus().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+
+        // resp 条件（用于 e2e_duration 范围查询）
+        // e2e_duration 范围查询条件
+        if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
+            mainMustConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("e2e_duration")
+                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+                            )
+                    )
+            ));
+        } else if (queryTracesParam.getMinE2eDuration() != null) {
+            mainMustConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("e2e_duration")
+                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+                            )
+                    )
+            ));
+        } else if (queryTracesParam.getMaxE2eDuration() != null) {
+            mainMustConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("e2e_duration")
+                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+                            )
+                    )
+            ));
+        }
+
+
+        // 3. 构建最终查询
+        return Query.of(q -> q
+                .bool(b -> b.must(mainMustConditions))
+        );
+    }
+
+
 
 }
