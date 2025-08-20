@@ -18,7 +18,7 @@ public class EsEsAgentStatServiceImpl implements EsAgentStatService {
     private EsAgentStatRepository esAgentStatRepository;
     @Override
     public List<AgentStat> search(String keyword) {
-        Iterable<AgentStat> iterable = esAgentStatRepository.findAll();
+        Iterable<AgentStat>  iterable = esAgentStatRepository.findAll();
         List<AgentStat> result = StreamSupport.stream(iterable.spliterator(), false)
                 .collect(Collectors.toList());
         return result;

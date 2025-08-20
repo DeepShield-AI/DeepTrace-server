@@ -17,7 +17,6 @@ public class EsAgentBasicServiceImpl implements EsAgentBasicService {
     @Autowired
     private EsAgentBasicRepository esAgentBasicRepository;
 
-
     @Override
     public List<AgentBasic> search(String keyword, Integer pageNum, Integer pageSize) {
         Iterable<AgentBasic > iterable = esAgentBasicRepository.findAll();
