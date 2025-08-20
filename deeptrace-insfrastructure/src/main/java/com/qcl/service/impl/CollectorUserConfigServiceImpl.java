@@ -12,76 +12,78 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * 采集器配置表（用户添加）(CollectorUserConfig)表服务实现类
+ * 采集器配置表（用户添加）服务实现类
  *
  * @author makejava
  * @since 2025-07-10 10:20:25
  */
 @Service("collectorUserConfigService")
 public class CollectorUserConfigServiceImpl implements CollectorUserConfigService {
+
     @Autowired
     private CollectorUserConfigDao collectorUserConfigDao;
 
     /**
-     * 通过ID查询单条数据
+     * 根据主键查询
      *
      * @param id 主键
      * @return 实例对象
      */
     @Override
-    public CollectorUserConfig queryById(Integer id) {
-        return this.collectorUserConfigDao.queryById(id);
+    public CollectorUserConfig queryById(Long id) {
+        return collectorUserConfigDao.queryById(id);
     }
 
     /**
      * 分页查询
      *
-     * @param collectorUserConfig 筛选条件
-     * @param pageRequest      分页对象
-     * @return 查询结果
+     * @param collectorUserConfig 查询条件
+     * @param pageRequest 分页参数
+     * @return 分页结果
      */
     @Override
     public Page<CollectorUserConfig> queryByPage(CollectorUserConfig collectorUserConfig, PageRequest pageRequest) {
-        long total = this.collectorUserConfigDao.count(collectorUserConfig);
-        if (total==0){
-            return new PageImpl<>(List.of(new CollectorUserConfig()), pageRequest, total);
+        long total = collectorUserConfigDao.count(collectorUserConfig);
+        if (total == 0) {
+            return new PageImpl<>(List.of(), pageRequest, total);
         }
-        return new PageImpl<>(this.collectorUserConfigDao.queryAllByLimit(collectorUserConfig, pageRequest), pageRequest, total);
+        return new PageImpl<>(collectorUserConfigDao.queryAllByLimit(collectorUserConfig, pageRequest), pageRequest, total);
     }
+
     /**
-     * 新增数据
+     * 新增配置
      *
-     * @param config 实例对象
-     * @return 实例对象
+     * @param config 配置对象
+     * @return 新增后的对象
      */
     @Override
     public CollectorUserConfig insert(CollectorUserConfig config) {
-        config.setConfigId("CONFIG"+System.currentTimeMillis());
+        config.setConfigId("CONFIG" + System.currentTimeMillis());
         config.setGroupId(config.getGroupName());
-        this.collectorUserConfigDao.insert(config);
+        collectorUserConfigDao.insert(config);
         return config;
     }
 
     /**
-     * 修改数据
+     * 编辑配置
      *
-     * @param collectorUserConfig 实例对象
-     * @return 实例对象
+     * @param collectorUserConfig 配置对象
+     * @return 更新后的对象
      */
     @Override
     public CollectorUserConfig update(CollectorUserConfig collectorUserConfig) {
-        this.collectorUserConfigDao.update(collectorUserConfig);
-        return this.queryById(collectorUserConfig.getId());
+        collectorUserConfigDao.update(collectorUserConfig);
+        return queryById(collectorUserConfig.getId());
     }
 
     /**
-     * 通过主键删除数据
+     * 删除配置
      *
      * @param id 主键
-     * @return 是否成功
+     * @return 删除是否成功
      */
     @Override
-    public boolean deleteById(Integer id) {
-        return this.collectorUserConfigDao.deleteById(id) > 0;
+    public boolean deleteById(Long id) {
+        return collectorUserConfigDao.deleteById(id) > 0;
     }
 }

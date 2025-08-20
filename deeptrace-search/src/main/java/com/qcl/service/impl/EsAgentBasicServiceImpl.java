@@ -1,16 +1,12 @@
 package com.qcl.service.impl;
 
 import com.qcl.entity.AgentBasic;
-import com.qcl.entity.AgentLog;
 import com.qcl.repository.EsAgentBasicRepository;
-import com.qcl.repository.EsAgentLogRepository;
 import com.qcl.service.EsAgentBasicService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @Service
 public class EsAgentBasicServiceImpl implements EsAgentBasicService {
@@ -18,10 +14,13 @@ public class EsAgentBasicServiceImpl implements EsAgentBasicService {
     private EsAgentBasicRepository esAgentBasicRepository;
 
     @Override
-    public List<AgentBasic> search(String keyword, Integer pageNum, Integer pageSize) {
-        Iterable<AgentBasic > iterable = esAgentBasicRepository.findAll();
-        List<AgentBasic> result = StreamSupport.stream(iterable.spliterator(), false)
-                .collect(Collectors.toList());
-        return result;
+    public Page<AgentBasic> search(String keyword, Integer pageNum, Integer pageSize) {
+        // 分页请求
+        PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
+        // keyword 查询
+        if (keyword == null || keyword.isEmpty()) {
+            return esAgentBasicRepository.findAll(pageRequest);
+        }
+        return esAgentBasicRepository.findByNameContaining(keyword, pageRequest);
     }
 }
