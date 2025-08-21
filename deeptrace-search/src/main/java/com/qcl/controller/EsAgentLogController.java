@@ -18,6 +18,7 @@ public class EsAgentLogController {
     @Autowired
     private EsAgentLogService esAgentLogService;
 
+    // 分页查询
     @RequestMapping(value = "/search", method = RequestMethod.GET)
     public ResponseEntity<PageResult<AgentLog>> search(@RequestParam(required = false) String keyword,
                                                        @RequestParam(required = false, defaultValue = "0") Integer pageNum,
@@ -31,5 +32,12 @@ public class EsAgentLogController {
                 page.getTotalPages()
         );
         return ResponseEntity.ok(result);
+    }
+
+    // 根据 lcuuid 查询单条详情
+    @RequestMapping(value = "/detail", method = RequestMethod.GET)
+    public ResponseEntity<AgentLog> detail(@RequestParam String lcuuid) {
+        AgentLog agentLog = esAgentLogService.findByLcuuid(lcuuid);
+        return ResponseEntity.ok(agentLog);
     }
 }
