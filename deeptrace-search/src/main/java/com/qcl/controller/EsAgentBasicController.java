@@ -7,9 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/api/esAgentBasic")
@@ -17,6 +15,7 @@ public class EsAgentBasicController {
     @Autowired
     private EsAgentBasicService esAgentBasicService;
 
+    // 分页查询
     @RequestMapping(value = "/search", method = RequestMethod.GET)
     public ResponseEntity<PageResult<AgentBasic>> search(@RequestParam(required = false) String keyword,
                                                          @RequestParam(required = false, defaultValue = "0") Integer pageNum,
@@ -30,5 +29,12 @@ public class EsAgentBasicController {
                 page.getTotalPages()
         );
         return ResponseEntity.ok(result);
+    }
+
+    // 根据 lcuuid 查询单条详情
+    @RequestMapping(value = "/detail", method = RequestMethod.GET)
+    public ResponseEntity<AgentBasic> detail(@RequestParam String lcuuid) {
+        AgentBasic agent = esAgentBasicService.findByLcuuid(lcuuid);
+        return ResponseEntity.ok(agent);
     }
 }

@@ -1,6 +1,5 @@
 package com.qcl.controller;
 
-
 import com.qcl.entity.AgentConfig;
 import com.qcl.service.EsAgentConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +18,19 @@ public class EsAgentConfigController {
     @Autowired
     private EsAgentConfigService esAgentConfigService;
 
+    // 暂时未使用当前接口
     @RequestMapping(value = "/search", method = RequestMethod.GET)
     public ResponseEntity<List<AgentConfig>> search(@RequestParam(required = false) String keyword,
                                                     @RequestParam(required = false, defaultValue = "0") Integer pageNum,
                                                     @RequestParam(required = false, defaultValue = "5") Integer pageSize) {
         List<AgentConfig> agentLog = esAgentConfigService.search(keyword, pageNum, pageSize);
         return ResponseEntity.ok(agentLog);
+    }
+
+    // 根据 agentLcuuid 查询单条详情（和lcuuid相同）
+    @RequestMapping(value = "/detail", method = RequestMethod.GET)
+    public ResponseEntity<AgentConfig> detail(@RequestParam String agentLcuuid) {
+        AgentConfig agentConfig = esAgentConfigService.findByAgentLcuuid(agentLcuuid);
+        return ResponseEntity.ok(agentConfig);
     }
 }
