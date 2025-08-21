@@ -2,6 +2,8 @@ package com.qcl.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -272,15 +274,15 @@ public class EsTraceServiceImpl implements EsTraceService {
             Query finalQuery = buildQuery(queryTracesParam);
 
             // 4.构建动态排序条件
-            List<co.elastic.clients.elasticsearch._types.SortOptions> sortOptions = new ArrayList<>();
+            List<SortOptions> sortOptions = new ArrayList<>();
 
             if (queryTracesParam.getSortBy() != null && !queryTracesParam.getSortBy().isEmpty()) {
-                co.elastic.clients.elasticsearch._types.SortOrder order =
+                SortOrder order =
                         "desc".equalsIgnoreCase(queryTracesParam.getSortOrder()) ?
-                                co.elastic.clients.elasticsearch._types.SortOrder.Desc :
-                                co.elastic.clients.elasticsearch._types.SortOrder.Asc;
+                                SortOrder.Desc :
+                                SortOrder.Asc;
 
-                sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(so -> so
+                sortOptions.add(SortOptions.of(so -> so
                         .field(f -> f
                                 .field(queryTracesParam.getSortBy())
                                 .order(order)
@@ -288,10 +290,10 @@ public class EsTraceServiceImpl implements EsTraceService {
                 ));
             } else {
                 // 默认排序
-                sortOptions.add(co.elastic.clients.elasticsearch._types.SortOptions.of(so -> so
+                sortOptions.add(SortOptions.of(so -> so
                         .field(f -> f
                                 .field("start_time")
-                                .order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)
+                                .order(SortOrder.Desc)
                         )
                 ));
             }
