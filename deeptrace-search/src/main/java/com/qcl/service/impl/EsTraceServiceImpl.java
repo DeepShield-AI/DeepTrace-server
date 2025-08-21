@@ -15,7 +15,6 @@ import com.qcl.service.EsTraceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
@@ -28,10 +27,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class EsTraceServiceImpl implements EsTraceService {
-    private final ElasticsearchOperations elasticsearchOperations;
     private final ElasticsearchClient elasticsearchClient;
     // 添加 ObjectMapper 用于序列化查询
     private final ObjectMapper objectMapper = new ObjectMapper();
+
 
     /**
      * 请求数时序统计
@@ -119,7 +118,7 @@ public class EsTraceServiceImpl implements EsTraceService {
                 StringTermsAggregate statusGroups =
                         response.aggregations().get("status_groups").sterms();
 
-                for (co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket bucket :
+                for (StringTermsBucket bucket :
                         statusGroups.buckets().array()) {
 
                     String statusCode = String.valueOf(bucket.key());

@@ -17,7 +17,7 @@ public class QueryTracesParam {
     private List<String> status;
 
     /**
-     * 请求的开始时间，值为秒级时间戳
+     * 最晚的开始时间，值为秒级时间戳
      */
     private Long startTime;
 

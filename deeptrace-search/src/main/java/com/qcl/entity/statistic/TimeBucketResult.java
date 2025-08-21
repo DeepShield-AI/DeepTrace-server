@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TimeBucketResult {
+public class TimeBucketResult extends Object{
     private Long timeKey;
     private Long docCount;
     private String statusCode;
