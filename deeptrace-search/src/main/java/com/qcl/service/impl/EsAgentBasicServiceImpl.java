@@ -13,14 +13,19 @@ public class EsAgentBasicServiceImpl implements EsAgentBasicService {
     @Autowired
     private EsAgentBasicRepository esAgentBasicRepository;
 
+    // 分页查询
     @Override
     public Page<AgentBasic> search(String keyword, Integer pageNum, Integer pageSize) {
-        // 分页请求
         PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
-        // keyword 查询
         if (keyword == null || keyword.isEmpty()) {
             return esAgentBasicRepository.findAll(pageRequest);
         }
         return esAgentBasicRepository.findByNameContaining(keyword, pageRequest);
+    }
+
+    // 根据 lcuuid 查询单条详情
+    @Override
+    public AgentBasic findByLcuuid(String lcuuid) {
+        return esAgentBasicRepository.findById(lcuuid).orElse(null);
     }
 }
