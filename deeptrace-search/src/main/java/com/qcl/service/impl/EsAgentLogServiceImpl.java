@@ -13,6 +13,7 @@ public class EsAgentLogServiceImpl implements EsAgentLogService {
     @Autowired
     private EsAgentLogRepository esAgentLogRepository;
 
+    // 分页查询
     @Override
     public Page<AgentLog> search(String keyword, Integer pageNum, Integer pageSize) {
         PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
@@ -20,5 +21,11 @@ public class EsAgentLogServiceImpl implements EsAgentLogService {
             return esAgentLogRepository.findAll(pageRequest);
         }
         return esAgentLogRepository.findByAgentNameContaining(keyword, pageRequest);
+    }
+
+    // 根据 lcuuid 查询单条详情
+    @Override
+    public AgentLog findByLcuuid(String lcuuid) {
+        return esAgentLogRepository.findById(lcuuid).orElse(null);
     }
 }
