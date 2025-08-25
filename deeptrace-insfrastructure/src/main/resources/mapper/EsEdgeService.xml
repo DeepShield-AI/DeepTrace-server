@@ -12,6 +12,7 @@
         <result property="maxMemory" column="max_memory" jdbcType="INTEGER"/>
         <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
         <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+        <result property="collectionPort" column="collection_port" jdbcType="VARCHAR"/>
     </resultMap>
 
     <!--查询单个-->
