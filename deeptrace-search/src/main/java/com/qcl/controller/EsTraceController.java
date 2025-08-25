@@ -3,10 +3,12 @@ package com.qcl.controller;
 import com.qcl.constants.TraceSearchTypeEnum;
 import com.qcl.entity.AgentStat;
 import com.qcl.entity.Traces;
+import com.qcl.entity.graph.ContainerStatsResult;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.entity.statistic.TimeBucketResult;
+import com.qcl.service.EsTraceGraphService;
 import com.qcl.service.EsTraceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -26,6 +28,9 @@ public class EsTraceController {
 
     @Autowired
     private EsTraceService esTraceService;
+    @Autowired
+    private EsTraceGraphService esTraceGraphService;
+
     @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
     public ResponseEntity< List<Traces>> search(QueryTracesParam queryTracesParam) {
         List<Traces> traces = esTraceService.queryByPage(queryTracesParam);
@@ -65,4 +70,11 @@ public class EsTraceController {
         }
     }
 
+
+
+    @RequestMapping(value = "/getContainerStats", method = RequestMethod.GET)
+    public ResponseEntity<List<ContainerStatsResult> > getContainerStats(QueryTracesParam queryTracesParam) {
+        List<ContainerStatsResult> traces = esTraceGraphService.getContainerStats(queryTracesParam);
+        return ResponseEntity.ok(traces);
+    }
 }

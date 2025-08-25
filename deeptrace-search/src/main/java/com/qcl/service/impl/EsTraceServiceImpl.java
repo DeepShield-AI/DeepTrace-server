@@ -438,6 +438,17 @@ public class EsTraceServiceImpl implements EsTraceService {
             ));
         }
 
+        //start_time开始时间范围
+        if (queryTracesParam.getStartTime() != null) {
+            mainMustConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("start_time")
+                                    .gte(queryTracesParam.getStartTime().toString())
+                            )
+                    )
+            ));
+        }
 
         // 3. 构建最终查询
         return Query.of(q -> q
