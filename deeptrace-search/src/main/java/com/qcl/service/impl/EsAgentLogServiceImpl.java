@@ -26,6 +26,6 @@ public class EsAgentLogServiceImpl implements EsAgentLogService {
     // 根据 lcuuid 查询单条详情
     @Override
     public AgentLog findByLcuuid(String lcuuid) {
-        return esAgentLogRepository.findById(lcuuid).orElse(null);
+        return esAgentLogRepository.findFirstByLcuuid(lcuuid);
     }
 }
