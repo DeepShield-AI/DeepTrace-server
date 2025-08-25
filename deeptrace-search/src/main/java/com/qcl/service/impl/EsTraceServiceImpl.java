@@ -348,7 +348,7 @@ public class EsTraceServiceImpl implements EsTraceService {
                             .size(50)
                             .source(src -> src
                                     .filter(f -> f
-                                            .excludes("topology", "components")
+                                            .excludes("topology", "components","nodes","edges")
                                     )
                             ),
                     Traces.class

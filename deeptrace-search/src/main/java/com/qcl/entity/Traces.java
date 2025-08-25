@@ -170,7 +170,7 @@ public class Traces implements Serializable {
 
         @Field(name = "container_name")
         @JsonProperty("container_name")
-        private List<String> containerName;
+        private String containerName;
 
         @Field(name = "created", type = FieldType.Date)
         @JsonProperty("created")
