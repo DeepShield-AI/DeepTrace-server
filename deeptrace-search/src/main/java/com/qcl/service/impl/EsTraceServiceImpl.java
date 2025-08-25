@@ -123,7 +123,7 @@ public class EsTraceServiceImpl implements EsTraceService {
                 for (StringTermsBucket bucket :
                         statusGroups.buckets().array()) {
 
-                    String statusCode = String.valueOf(bucket.key());
+                    String statusCode = bucket.key().stringValue();
                     List<TimeBucketResult> timeBuckets = new ArrayList<>();
 
                     // 解析时间桶数据
@@ -218,9 +218,19 @@ public class EsTraceServiceImpl implements EsTraceService {
                     if (bucket.aggregations() != null && bucket.aggregations().containsKey("p75_duration")) {
                         Aggregate percentilesAgg = bucket.aggregations().get("p75_duration");
                         if (percentilesAgg !=null) {
-                            var percentiles = percentilesAgg.percentilesBucket();
-                            if (percentiles.values() != null) {
-                                p75Duration = percentiles.values()._get();
+                            if (percentilesAgg.isTdigestPercentiles()) {
+                                var tdigestPercentiles = percentilesAgg.tdigestPercentiles();
+                                if (tdigestPercentiles.values() != null) {
+                                    // 获取 90th 百分位值
+                                    p90Duration = tdigestPercentiles.values().keyed().get("75.0");
+                                }
+                            }
+                            // 如果是原来的 PercentilesBucket 类型
+                            else if (percentilesAgg.isPercentilesBucket()) {
+                                var percentiles = percentilesAgg.percentilesBucket();
+                                if (percentiles.values() != null) {
+                                    p90Duration = percentiles.values()._get();
+                                }
                             }
                         }
                     }
@@ -230,9 +240,19 @@ public class EsTraceServiceImpl implements EsTraceService {
                     if (bucket.aggregations() != null && bucket.aggregations().containsKey("p90_duration")) {
                         var percentilesAgg = bucket.aggregations().get("p90_duration");
                         if (percentilesAgg !=null) {
-                            var percentiles = percentilesAgg.percentilesBucket();
-                            if (percentiles.values() != null) {
-                                p90Duration = percentiles.values()._get();
+                            if (percentilesAgg.isTdigestPercentiles()) {
+                                var tdigestPercentiles = percentilesAgg.tdigestPercentiles();
+                                if (tdigestPercentiles.values() != null) {
+                                    // 获取 90th 百分位值
+                                    p90Duration = tdigestPercentiles.values().keyed().get("90.0");
+                                }
+                            }
+                            // 如果是原来的 PercentilesBucket 类型
+                            else if (percentilesAgg.isPercentilesBucket()) {
+                                var percentiles = percentilesAgg.percentilesBucket();
+                                if (percentiles.values() != null) {
+                                    p90Duration = percentiles.values()._get();
+                                }
                             }
                         }
                     }
@@ -241,9 +261,19 @@ public class EsTraceServiceImpl implements EsTraceService {
                     if (bucket.aggregations() != null && bucket.aggregations().containsKey("p99_duration")) {
                         var percentilesAgg = bucket.aggregations().get("p99_duration");
                         if (percentilesAgg !=null) {
-                            var percentiles = percentilesAgg.percentilesBucket();
-                            if (percentiles.values() != null) {
-                                p99Duration = percentiles.values()._get();
+                            if (percentilesAgg.isTdigestPercentiles()) {
+                                var tdigestPercentiles = percentilesAgg.tdigestPercentiles();
+                                if (tdigestPercentiles.values() != null) {
+                                    // 获取 90th 百分位值
+                                    p90Duration = tdigestPercentiles.values().keyed().get("99.0");
+                                }
+                            }
+                            // 如果是原来的 PercentilesBucket 类型
+                            else if (percentilesAgg.isPercentilesBucket()) {
+                                var percentiles = percentilesAgg.percentilesBucket();
+                                if (percentiles.values() != null) {
+                                    p90Duration = percentiles.values()._get();
+                                }
                             }
                         }
                     }
