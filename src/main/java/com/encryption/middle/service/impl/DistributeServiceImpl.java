@@ -133,7 +133,7 @@ public class DistributeServiceImpl implements DistributeService {
         );
         try {
 
-            SearchRequest searchRequest = new SearchRequest("traces");
+            SearchRequest searchRequest = new SearchRequest("traces2");
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
             // 构建布尔查询，支持多条件组合
             BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
@@ -278,7 +278,7 @@ public class DistributeServiceImpl implements DistributeService {
          * test-rps-100-mappings
          * test-rps-100-traces
          */
-        SearchRequest searchRequest = new SearchRequest("traces");
+        SearchRequest searchRequest = new SearchRequest("traces2");
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         // 匹配查询
 //        sourceBuilder.query(QueryBuilders.matchQuery("trace_id", flamegraphDataQuery.getTraceId ()));
