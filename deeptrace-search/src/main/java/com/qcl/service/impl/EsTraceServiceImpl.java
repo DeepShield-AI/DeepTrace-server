@@ -19,12 +19,15 @@ import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.ScrollResponse;
 
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
+
 
 @Service
 @RequiredArgsConstructor
@@ -296,9 +299,7 @@ public class EsTraceServiceImpl implements EsTraceService {
         }
     }
 
-
-
-
+    // 深分页查询
     public List<Traces> queryByPage(QueryTracesParam queryTracesParam) {
         try {
             Query finalQuery = buildQuery(queryTracesParam);
@@ -366,9 +367,51 @@ public class EsTraceServiceImpl implements EsTraceService {
         }
     }
 
+    // 滚动查询
+    public Map<String, Object> scrollQuery(QueryTracesParam param, String scrollId, Integer pageSize) {
+        try {
+            Map<String, Object> result = new java.util.HashMap<>();
+            List<Traces> traces;
+            String nextScrollId;
 
+            if (scrollId == null || scrollId.isEmpty()) {
+                // 首次滚动查询
+                Query query = buildQuery(param);
+                SearchResponse<Traces> response = elasticsearchClient.search(s -> s
+                                .index("traces")
+                                .query(query)
+                                .size(pageSize != null ? pageSize : 10)
+                                .scroll(t -> t.time("2m"))
+                                .source(src -> src.filter(f -> f.excludes("topology", "components", "nodes", "edges"))),
+                        Traces.class
+                );
+                traces = response.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
+                nextScrollId = response.scrollId();
+            } else {
+                // 用 scrollId 拉取下一页
+                ScrollResponse<Traces> response = elasticsearchClient.scroll(s -> s
+                                .scrollId(scrollId)
+                                .scroll(t -> t.time("2m")),
+                        Traces.class
+                );
+                traces = response.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
+                nextScrollId = response.scrollId();
+            }
 
+            result.put("scrollId", nextScrollId);
+            result.put("traces", traces);
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error executing scrollQuery", e);
+        }
+    }
 
+    /**
+     * 构建查询条件
+     * @param queryTracesParam 查询参数
+     * @return Elasticsearch 查询对象
+     */
     private Query buildQuery(QueryTracesParam queryTracesParam) {
         // 1. 构建嵌套查询条件
         List<Query> spanMustConditions = new ArrayList<>();
@@ -485,7 +528,5 @@ public class EsTraceServiceImpl implements EsTraceService {
                 .bool(b -> b.must(mainMustConditions))
         );
     }
-
-
 
 }
