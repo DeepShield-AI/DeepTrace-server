@@ -2,8 +2,8 @@ package com.qcl.controller;
 
 import com.qcl.constants.TraceSearchTypeEnum;
 import com.qcl.entity.Traces;
-import com.qcl.entity.graph.EdgeStatsResult;
-import com.qcl.entity.graph.NodeStatsResult;
+//import com.qcl.entity.graph.EdgeStatsResult;
+//import com.qcl.entity.graph.NodeStatsResult;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
@@ -29,6 +29,14 @@ public class EsTraceController {
     @Autowired
     private EsTraceService esTraceService;
 
+    // 滚动查询
+    @RequestMapping(value = "/scrollQuery", method = RequestMethod.GET)
+    public ResponseEntity<?> scrollQuery(QueryTracesParam param,
+                                         @RequestParam(required = false) String scrollId,
+                                         @RequestParam(required = false) Integer pageSize) {
+        Map<String, Object> result = esTraceService.scrollQuery(param, scrollId, pageSize);
+        return ResponseEntity.ok(result);
+    }
 
     @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
     public ResponseEntity< List<Traces>> search(QueryTracesParam queryTracesParam) {
