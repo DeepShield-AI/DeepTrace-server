@@ -8,6 +8,7 @@ import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.entity.statistic.TimeBucketResult;
+import com.qcl.vo.PageResult;
 import com.qcl.service.EsTraceGraphService;
 import com.qcl.service.EsTraceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,12 +38,29 @@ public class EsTraceController {
         Map<String, Object> result = esTraceService.scrollQuery(param, scrollId, pageSize);
         return ResponseEntity.ok(result);
     }
+    
 
+    // 分页查询
+//    @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
+//    public ResponseEntity<PageResult<Traces>> search(
+//            @RequestParam(required = false) String keyword,
+//            @RequestParam(required = false, defaultValue = "0") Integer pageNum,
+//            @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
+//
+//        QueryTracesParam param = new QueryTracesParam();
+//        param.setPageNum(pageNum);
+//        param.setPageSize(pageSize);
+//
+//        PageResult<Traces> result = esTraceService.queryByPageResult(param);
+//        return ResponseEntity.ok(result);
+//    }
     @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
-    public ResponseEntity< List<Traces>> search(QueryTracesParam queryTracesParam) {
-        List<Traces> traces = esTraceService.queryByPage(queryTracesParam);
-        return ResponseEntity.ok(traces);
+    // 使用 @ModelAttribute 自动绑定查询参数
+    public ResponseEntity<PageResult<Traces>> search(@ModelAttribute QueryTracesParam param) {
+        PageResult<Traces> result = esTraceService.queryByPageResult(param);
+        return ResponseEntity.ok(result);
     }
+
     @RequestMapping(value = "/statistic", method = RequestMethod.GET)
     public ResponseEntity<?> statistic(@ModelAttribute QueryTracesParam queryTracesParam,
                                     @RequestParam(required = false) String type) {
