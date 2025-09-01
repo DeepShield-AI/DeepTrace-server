@@ -38,22 +38,9 @@ public class EsTraceController {
         Map<String, Object> result = esTraceService.scrollQuery(param, scrollId, pageSize);
         return ResponseEntity.ok(result);
     }
-    
+
 
     // 分页查询
-//    @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
-//    public ResponseEntity<PageResult<Traces>> search(
-//            @RequestParam(required = false) String keyword,
-//            @RequestParam(required = false, defaultValue = "0") Integer pageNum,
-//            @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
-//
-//        QueryTracesParam param = new QueryTracesParam();
-//        param.setPageNum(pageNum);
-//        param.setPageSize(pageSize);
-//
-//        PageResult<Traces> result = esTraceService.queryByPageResult(param);
-//        return ResponseEntity.ok(result);
-//    }
     @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
     // 使用 @ModelAttribute 自动绑定查询参数
     public ResponseEntity<PageResult<Traces>> search(@ModelAttribute QueryTracesParam param) {
