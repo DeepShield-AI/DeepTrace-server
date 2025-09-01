@@ -115,7 +115,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                                                     )
                                                     .aggregations("qps", aaaa -> aaaa
                                                             .bucketScript(bs -> bs
-                                                                                                                                    .bucketsPath(bp -> bp
+                                                                    .bucketsPath(bp -> bp
                                                                             .dict(Map.of(
                                                                                     "count", "total_count"
                                                                             ))
@@ -205,7 +205,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                                 }
                             }
 
-                        // 获取 QPS
+                            // 获取 QPS
                             if (bucket.aggregations().containsKey("qps")) {
                                 Aggregate aggregate = bucket.aggregations().get("qps");
                                 if (aggregate.isSimpleValue()) {
@@ -273,12 +273,12 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
         }
 
         // protocol 条件
-        if (queryTracesParam.getProtocol() != null && !queryTracesParam.getProtocol().isEmpty()) {
+        if (queryTracesParam.getProtocols() != null && !queryTracesParam.getProtocols().isEmpty()) {
             mainMustConditions.add(Query.of(q -> q
                     .terms(t -> t
                             .field("protocol.keyword")
                             .terms(t2 -> t2.value(
-                                    queryTracesParam.getProtocol().stream()
+                                    queryTracesParam.getProtocols().stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())
                             ))
@@ -286,12 +286,12 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             ));
         }
         // status 条件
-        if (queryTracesParam.getStatus() != null && !queryTracesParam.getStatus().isEmpty()) {
+        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
             mainMustConditions.add(Query.of(q -> q
                     .terms(t -> t
                             .field("status_code.keyword")
                             .terms(t2 -> t2.value(
-                                    queryTracesParam.getStatus().stream()
+                                    queryTracesParam.getStatusCodes().stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())
                             ))

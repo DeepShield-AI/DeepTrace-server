@@ -14,12 +14,10 @@ import java.util.Map;
  * Trace 查询服务接口
  */
 public interface EsTraceService {
+
+    // List<Traces> queryByPage(QueryTracesParam param);
     /**
-     * 深分页查询 Trace 列表
-     */
-//    List<Traces> queryByPage(QueryTracesParam param);
-    /**
-     * 返回分页结果对象
+     * 深分页查询 Trace 列表，返回分页结果对象
      */
     PageResult<Traces> queryByPageResult(QueryTracesParam param);
 

@@ -42,7 +42,7 @@ public class EsTraceController {
 
     // 分页查询
     @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
-    // 使用 @ModelAttribute 自动绑定查询参数
+    // 使用 @ModelAttribute 自动绑定查询参数（内置Apifox不显示？？
     public ResponseEntity<PageResult<Traces>> search(@ModelAttribute QueryTracesParam param) {
         PageResult<Traces> result = esTraceService.queryByPageResult(param);
         return ResponseEntity.ok(result);

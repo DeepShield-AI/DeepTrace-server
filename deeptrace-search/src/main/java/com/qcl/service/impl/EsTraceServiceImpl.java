@@ -309,7 +309,7 @@ public class EsTraceServiceImpl implements EsTraceService {
     public PageResult<Traces> queryByPageResult(QueryTracesParam param) {
         try {
             Query query = buildQuery(param);
-            int pageNum = param.getPageNum() != null ? param.getPageNum() : 0;
+            int pageNum = param.getPageNo() != null ? param.getPageNo() : 0;
             int pageSize = param.getPageSize() != null ? param.getPageSize() : 10;
             int from = pageNum * pageSize;
 
@@ -479,12 +479,12 @@ public class EsTraceServiceImpl implements EsTraceService {
         }
 
         // protocol 条件
-        if (queryTracesParam.getProtocol() != null && !queryTracesParam.getProtocol().isEmpty()) {
+        if (queryTracesParam.getProtocols() != null && !queryTracesParam.getProtocols().isEmpty()) {
             mainMustConditions.add(Query.of(q -> q
                     .terms(t -> t
                             .field("protocol.keyword")
                             .terms(t2 -> t2.value(
-                                    queryTracesParam.getProtocol().stream()
+                                    queryTracesParam.getProtocols().stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())
                             ))
@@ -492,12 +492,12 @@ public class EsTraceServiceImpl implements EsTraceService {
             ));
         }
         // status 条件
-        if (queryTracesParam.getStatus() != null && !queryTracesParam.getStatus().isEmpty()) {
+        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
             mainMustConditions.add(Query.of(q -> q
                     .terms(t -> t
                             .field("status_code.keyword")
                             .terms(t2 -> t2.value(
-                                    queryTracesParam.getStatus().stream()
+                                    queryTracesParam.getStatusCodes().stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())
                             ))
