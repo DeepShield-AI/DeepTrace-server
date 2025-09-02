@@ -549,6 +549,20 @@ public class EsTraceServiceImpl implements EsTraceService {
             ));
         }
 
+        // endpoints 条件（支持多选）
+        if (queryTracesParam.getEndpoints() != null && !queryTracesParam.getEndpoints().isEmpty()) {
+            mainMustConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("endpoint.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getEndpoints().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+
         // 3. 构建最终查询
         return Query.of(q -> q
                 .bool(b -> b.must(mainMustConditions))
