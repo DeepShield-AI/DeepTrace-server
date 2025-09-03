@@ -10,11 +10,15 @@ public class QueryTracesParam {
     /**
      * 应用协议
      */
-    private List<String> protocol;
+    private List<String> protocols;
+    /*
+     * 应用端点
+     */
+    private List<String> endpoints;
     /**
      * 响应状态
      */
-    private List<String> status;
+    private List<String> statusCodes;
 
     /**
      * 最晚的开始时间，值为秒级时间戳
