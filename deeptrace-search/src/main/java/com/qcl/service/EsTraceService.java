@@ -15,11 +15,20 @@ import java.util.Map;
  */
 public interface EsTraceService {
 
-    // List<Traces> queryByPage(QueryTracesParam param);
     /**
      * 深分页查询 Trace 列表，返回分页结果对象
      */
     PageResult<Traces> queryByPageResult(QueryTracesParam param);
+
+    /**
+     * 根据 Trace ID 查询单个 Trace 详情，返回分页结果对象（方便前端统一处理）
+     */
+    PageResult<Traces> traceDetailResult(QueryTracesParam param);
+
+    /**
+     * 获取所有可用的筛选项
+     */
+    Map<String, List<String>> getAllFilterOptions();
 
     /**
      * 滚动查询 Trace 列表

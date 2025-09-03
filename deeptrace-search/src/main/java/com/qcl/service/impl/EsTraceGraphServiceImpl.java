@@ -2,7 +2,7 @@ package com.qcl.service.impl;
 
 import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
-import com.qcl.entity.graph.ContainerStatsResult;
+import com.qcl.entity.graph.NodeStatsResult;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.service.EsTraceGraphService;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -42,7 +42,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
      * @param queryTracesParam 筛选条件
      * @return 容器分组统计结果
      */
-    public List<ContainerStatsResult> getContainerStats(QueryTracesParam queryTracesParam) {
+    public List<NodeStatsResult> getContainerStats(QueryTracesParam queryTracesParam) {
         try {
             // 1. 构建查询条件
             Query query = buildQuery(queryTracesParam);
@@ -132,7 +132,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             );
 
             // 3. 解析聚合结果
-            List<ContainerStatsResult> result = new ArrayList<>();
+            List<NodeStatsResult> result = new ArrayList<>();
 
             if (response.aggregations() != null &&
                     response.aggregations().containsKey("group_by_container")) {
@@ -213,7 +213,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                                 }
                             }
 
-                            result.add(new ContainerStatsResult(
+                            result.add(new NodeStatsResult(
                                     tgid, containerName, avgDuration, errorCount,
                                     totalCount, errorRate, qps));
                         }
