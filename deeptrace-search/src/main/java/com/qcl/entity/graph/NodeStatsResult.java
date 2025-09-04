@@ -1,14 +1,13 @@
 package com.qcl.entity.graph;
 
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class ContainerStatsResult {
-    private String tgid;
+public class NodeStatsResult {
+    private String nodeId;
     private String containerName;
     private Double avgDuration;
     private Long errorCount;
@@ -16,9 +15,9 @@ public class ContainerStatsResult {
     private Double errorRate;
     private Double qps;
 
-    public ContainerStatsResult(String tgid, String containerName, Double avgDuration,
-                                Long errorCount, Double totalCount, Double errorRate, Double qps) {
-        this.tgid = tgid;
+    public NodeStatsResult(String nodeId, String containerName, Double avgDuration,
+                           Long errorCount, Double totalCount, Double errorRate, Double qps) {
+        this.nodeId = nodeId;
         this.containerName = containerName;
         this.avgDuration = avgDuration;
         this.errorCount = errorCount;
