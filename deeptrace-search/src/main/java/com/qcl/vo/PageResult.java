@@ -16,6 +16,12 @@ public class PageResult<T> {
         this.totalElements = totalElements;
         this.totalPages = totalPages;
     }
+    public PageResult(List<T> content, int pageSize, long totalElements) {
+        this.content = content;
+        this.pageSize = pageSize;
+        this.totalElements = totalElements;
+        this.totalPages = (int) (totalElements/pageSize);
+    }
 
     public List<T> getContent() { return content; }
     public void setContent(List<T> content) { this.content = content; }

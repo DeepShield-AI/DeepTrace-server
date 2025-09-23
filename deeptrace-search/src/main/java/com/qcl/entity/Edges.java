@@ -42,6 +42,10 @@ public class Edges implements Serializable {
     @JsonProperty("trace_tags")
     private TraceTags traceTags;
 
+    @Field(name = "status_code")
+    @JsonProperty("status_code")
+    private String statusCode;
+
     @Data
     public static class Context implements Serializable {
         @Field(name = "child_ids")

@@ -21,8 +21,8 @@ public class Nodes implements Serializable {
     @Id
     private String id;
 
-    @Field(name = "node_id")
-    @JsonProperty("node_id")
+    @Field(name = "nodeId")
+    @JsonProperty("nodeId")
     private Long nodeId;
 
     @Field(name = "metric")

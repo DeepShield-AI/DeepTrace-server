@@ -2,26 +2,18 @@ package com.qcl.service.impl;
 
 import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
-import com.qcl.entity.graph.ContainerStatsResult;
+import com.qcl.entity.graph.EdgeStatsResult;
+import com.qcl.entity.graph.NodeStatsResult;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.service.EsTraceGraphService;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.SortOptions;
-import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.entity.Traces;
-import com.qcl.entity.param.QueryTracesParam;
-import com.qcl.entity.statistic.TimeBucketResult;
-import com.qcl.entity.statistic.*;
-import com.qcl.service.EsTraceService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.elasticsearch.client.elc.NativeQuery;
-import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
-import org.springframework.data.elasticsearch.core.SearchHits;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
 import org.springframework.stereotype.Service;
@@ -37,15 +29,466 @@ import java.util.stream.Collectors;
 public class EsTraceGraphServiceImpl implements EsTraceGraphService {
     private final ElasticsearchClient elasticsearchClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+
+
+
+    @Override
     /**
-     * 按容器分组统计信息
+     * 按节点分组统计信息
+     * @param queryTracesParam 筛选条件
+     * @return 节点分组统计结果
+     */
+    public List<NodeStatsResult> getNodesStats(QueryTracesParam queryTracesParam) {
+        try {
+            // 1. 构建查询条件
+            Query query = buildQueryToNode(queryTracesParam);
+
+            // 计算时间窗口（秒）
+//            Long timeWindow = (System.currentTimeMillis() - queryTracesParam.getStartTime()) / 1000;
+
+            // 2. 构建聚合查询
+            SearchResponse<Traces> response = elasticsearchClient.search(s -> s
+                            .index("nodes")
+                            .size(0) // 不返回具体文档
+                            .query(query)
+                            .aggregations("node_metrics", a -> a
+                                    .terms(t -> t
+                                            .field("nodeId")
+                                            .size(100)
+                                    )
+                                    .aggregations("sample_doc", aa -> aa
+                                            .topHits(th -> th
+                                                    .size(1)
+                                                    .source(src -> src
+                                                            .filter(f -> f
+                                                                    .includes("tag.docker_tag.container_name")
+                                                            )
+                                                    )
+                                            )
+                                    )
+                                    .aggregations("avg_duration", aa -> aa
+                                            .avg(avg -> avg
+                                                    .field("metric.duration")
+                                            )
+                                    )
+                                    .aggregations("total_count", aa -> aa
+                                            .valueCount(vc -> vc
+                                                    .field("nodeId")
+                                            )
+                                    )
+                                    .aggregations("qps", aa -> aa
+                                            .bucketScript(bs -> bs
+                                                    .bucketsPath(bp -> bp
+                                                            .dict(Map.of(
+                                                                    "count", "total_count"
+                                                            ))
+                                                    )
+                                                    .script(sc -> sc
+                                                            .source("params.count / " + 3600)
+                                                    )
+                                            )
+                                    )
+                            ),
+                    Traces.class
+            );
+
+            // 3. 解析聚合结果
+            List<NodeStatsResult> result = new ArrayList<>();
+
+            if (response.aggregations() != null &&
+                    response.aggregations().containsKey("node_metrics")) {
+
+                LongTermsAggregate termsAgg = response.aggregations().get("node_metrics").lterms();
+
+                for (LongTermsBucket bucket : termsAgg.buckets().array()) {
+                    String nodeId = String.valueOf(bucket.key());
+                    String containerName = "";
+                    Double avgDuration = 0.0;
+                    Long errorCount = 0L; // 这个查询中没有错误计数
+                    Double totalCount = 0.0;
+                    Double errorRate = 0.0; // 这个查询中没有错误率
+                    Double qps = 0.0;
+
+                    // 获取容器名称
+                    if (bucket.aggregations().containsKey("sample_doc")) {
+                        Aggregate aggregate = bucket.aggregations().get("sample_doc");
+                        if (aggregate.isTopHits()) {
+                            TopHitsAggregate topHitsAgg = aggregate.topHits();
+                            HitsMetadata<JsonData> hitsMetadata = topHitsAgg.hits();
+
+                            if (hitsMetadata.hits() != null && !hitsMetadata.hits().isEmpty()) {
+                                Hit<JsonData> hit = hitsMetadata.hits().get(0); // 获取第一个 hit
+                                JsonData source = hit.source();
+
+                                if (source != null) {
+                                    try {
+                                        // 使用 ObjectMapper 转换为 Map 进行解析
+                                        Map<String, Object> sourceMap = objectMapper.readValue(source.toJson().toString(), Map.class);
+                                        containerName = extractContainerNameFromMap(sourceMap);
+
+                                    } catch (Exception e) {
+                                        // 如果上面失败，尝试其他方式
+                                        containerName = parseContainerNameFromJsonData(source);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 获取平均响应时延
+                    if (bucket.aggregations().containsKey("avg_duration")) {
+                        avgDuration = bucket.aggregations().get("avg_duration").avg().value();
+                    }
+
+                    // 获取总请求数
+                    if (bucket.aggregations().containsKey("total_count")) {
+                        totalCount = bucket.aggregations().get("total_count").valueCount().value();
+                    }
+
+                    // 获取 QPS
+                    if (bucket.aggregations().containsKey("qps")) {
+                        Aggregate aggregate = bucket.aggregations().get("qps");
+                        if (aggregate.isSimpleValue()) {
+                            qps = aggregate.simpleValue().value();
+                        }
+                    }
+
+                    result.add(new NodeStatsResult(
+                            nodeId, containerName, avgDuration, errorCount,
+                            totalCount, errorRate, qps));
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error executing Elasticsearch node stats aggregation query", e);
+        }
+    }
+
+    private Query buildQueryToNode(QueryTracesParam queryTracesParam) {
+        // 构建过滤条件
+        List<Query> filterConditions = new ArrayList<>();
+
+        // endpoints 条件
+        if (queryTracesParam.getEndpoints() != null && !queryTracesParam.getEndpoints().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("trace_tags.endpoints.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getEndpoints().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+
+        // protocols 条件
+        if (queryTracesParam.getProtocols() != null && !queryTracesParam.getProtocols().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("trace_tags.protocols.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getProtocols().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+
+        // status codes 条件
+        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("trace_tags.status_codes.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getStatusCodes().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+
+        // start_time 范围条件
+        if (queryTracesParam.getStartTime() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.start_time")
+                                    .gte(queryTracesParam.getStartTime().toString())
+                            )
+                    )
+            ));
+        }
+
+        // e2e_duration 范围查询条件
+        if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+                            )
+                    )
+            ));
+        } else if (queryTracesParam.getMinE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+                            )
+                    )
+            ));
+        } else if (queryTracesParam.getMaxE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+                            )
+                    )
+            ));
+        }
+
+        // 构建最终查询
+        return Query.of(q -> q
+                .bool(b -> b
+                        .filter(filterConditions)
+                )
+        );
+    }
+
+
+
+    /**
+     * 按边（节点连接关系）分组统计信息
+     * @param queryTracesParam 筛选条件
+     * @return 边分组统计结果
+     */
+    public List<EdgeStatsResult> getEdgesStats(QueryTracesParam queryTracesParam) {
+        try {
+            // 1. 构建查询条件
+            Query query = buildQueryToNode(queryTracesParam);
+
+            Long timeWindow = (System.currentTimeMillis() - queryTracesParam.getStartTime()) / 1000;
+
+            // 2. 构建聚合查询
+            SearchResponse<Traces> response = elasticsearchClient.search(s -> s
+                            .index("edges")
+                            .size(0) // 不返回具体文档
+                            .query(query)
+                            .aggregations("node_metrics", a -> a
+                                    .multiTerms(mt -> mt
+                                            .terms(List.of(
+                                                    MultiTermLookup.of(mtl -> mtl.field("src_nodeid")),
+                                                    MultiTermLookup.of(mtl -> mtl.field("dst_nodeid"))
+                                            ))
+                                            .size(500)
+                                    )
+                                    .aggregations("avg_duration", aa -> aa
+                                            .avg(avg -> avg
+                                                    .field("metric.duration")
+                                            )
+                                    )
+                                    .aggregations("total_count", aa -> aa
+                                            .valueCount(vc -> vc
+                                                    .field("src_nodeid")
+                                            )
+                                    )
+                                    .aggregations("qps", aa -> aa
+                                            .bucketScript(bs -> bs
+                                                    .bucketsPath(bp -> bp
+                                                            .dict(Map.of(
+                                                                    "count", "total_count"
+                                                            ))
+                                                    )
+                                                    .script(sc -> sc
+                                                            .source("params.count / 3600")//todo: 改成 timeWindow
+                                                    )
+                                            )
+                                    )
+                            ),
+                    Traces.class
+            );
+
+            // 3. 解析聚合结果
+            List<EdgeStatsResult> result = new ArrayList<>();
+
+            if (response.aggregations() != null &&
+                    response.aggregations().containsKey("node_metrics")) {
+
+                MultiTermsAggregate multiTermsAgg = response.aggregations().get("node_metrics").multiTerms();
+
+                for (MultiTermsBucket bucket : multiTermsAgg.buckets().array()) {
+                    // 获取源节点和目标节点ID
+                    List<String> keys = new ArrayList<>();
+                    for (FieldValue key : bucket.key()) {
+                        if (key.isString()) {
+                            keys.add(key.stringValue());
+                        } else if (key.isLong()) {
+                            keys.add(String.valueOf(key.longValue()));
+                        } else if (key.isDouble()) {
+                            keys.add(String.valueOf(key.doubleValue()));
+                        } else {
+                            keys.add(key.toString());
+                        }
+                    }
+
+                    String srcNodeId = keys.size() > 0 ? keys.get(0) : "";
+                    String dstNodeId = keys.size() > 1 ? keys.get(1) : "";
+
+                    Double avgDuration = 0.0;
+                    Double totalCount = 0.0;
+                    Double qps = 0.0;
+
+                    // 获取平均响应时延
+                    if (bucket.aggregations().containsKey("avg_duration")) {
+                        avgDuration = bucket.aggregations().get("avg_duration").avg().value();
+                    }
+
+                    // 获取总请求数
+                    if (bucket.aggregations().containsKey("total_count")) {
+                        totalCount = bucket.aggregations().get("total_count").valueCount().value();
+                    }
+
+                    // 获取 QPS
+                    if (bucket.aggregations().containsKey("qps")) {
+                        Aggregate aggregate = bucket.aggregations().get("qps");
+                        if (aggregate.isSimpleValue()) {
+                            qps = aggregate.simpleValue().value();
+                        }
+                    }
+
+                    result.add(new EdgeStatsResult(
+                            srcNodeId, dstNodeId, avgDuration, totalCount, qps));
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error executing Elasticsearch edge stats aggregation query", e);
+        }
+    }
+
+    private Query buildQueryToEdge(QueryTracesParam queryTracesParam) {
+        // 构建过滤条件
+        List<Query> filterConditions = new ArrayList<>();
+
+        // endpoints 条件
+        if (queryTracesParam.getEndpoints() != null && !queryTracesParam.getEndpoints().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("trace_tags.endpoints.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getEndpoints().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+
+        // protocols 条件
+        if (queryTracesParam.getProtocols() != null && !queryTracesParam.getProtocols().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("trace_tags.protocols.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getProtocols().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+
+        // status codes 条件
+        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("trace_tags.status_codes.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getStatusCodes().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+
+        // start_time 范围条件
+        if (queryTracesParam.getStartTime() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.start_times")
+                                    .gte(queryTracesParam.getStartTime().toString())
+                            )
+                    )
+            ));
+        }
+
+        // e2e_duration 范围查询条件
+        if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+                            )
+                    )
+            ));
+        } else if (queryTracesParam.getMinE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+                            )
+                    )
+            ));
+        } else if (queryTracesParam.getMaxE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+                            )
+                    )
+            ));
+        }
+
+
+        // 构建最终查询
+        return Query.of(q -> q
+                .bool(b -> b
+                        .filter(filterConditions)
+                )
+        );
+    }
+
+
+
+
+    /**
+     * 按容器分组统计信息 -- traces
      * @param queryTracesParam 筛选条件
      * @return 容器分组统计结果
      */
-    public List<ContainerStatsResult> getContainerStats(QueryTracesParam queryTracesParam) {
+    public List<NodeStatsResult> getNodesStatsByTrace(QueryTracesParam queryTracesParam) {
         try {
             // 1. 构建查询条件
-            Query query = buildQuery(queryTracesParam);
+            Query query = buildQueryToTrace(queryTracesParam);
 
             Long timeWindow = (System.currentTimeMillis() - queryTracesParam.getStartTime()) / 1000;
             // 2. 构建聚合查询
@@ -132,7 +575,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             );
 
             // 3. 解析聚合结果
-            List<ContainerStatsResult> result = new ArrayList<>();
+            List<NodeStatsResult> result = new ArrayList<>();
 
             if (response.aggregations() != null &&
                     response.aggregations().containsKey("group_by_container")) {
@@ -213,7 +656,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                                 }
                             }
 
-                            result.add(new ContainerStatsResult(
+                            result.add(new NodeStatsResult(
                                     tgid, containerName, avgDuration, errorCount,
                                     totalCount, errorRate, qps));
                         }
@@ -232,7 +675,9 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
 
 
 
-    private Query buildQuery(QueryTracesParam queryTracesParam) {
+
+
+    private Query buildQueryToTrace(QueryTracesParam queryTracesParam) {
         // 1. 构建嵌套查询条件
         List<Query> spanMustConditions = new ArrayList<>();
 
@@ -273,12 +718,12 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
         }
 
         // protocol 条件
-        if (queryTracesParam.getProtocol() != null && !queryTracesParam.getProtocol().isEmpty()) {
+        if (queryTracesParam.getProtocols() != null && !queryTracesParam.getProtocols().isEmpty()) {
             mainMustConditions.add(Query.of(q -> q
                     .terms(t -> t
                             .field("protocol.keyword")
                             .terms(t2 -> t2.value(
-                                    queryTracesParam.getProtocol().stream()
+                                    queryTracesParam.getProtocols().stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())
                             ))
@@ -286,12 +731,12 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             ));
         }
         // status 条件
-        if (queryTracesParam.getStatus() != null && !queryTracesParam.getStatus().isEmpty()) {
+        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
             mainMustConditions.add(Query.of(q -> q
                     .terms(t -> t
                             .field("status_code.keyword")
                             .terms(t2 -> t2.value(
-                                    queryTracesParam.getStatus().stream()
+                                    queryTracesParam.getStatusCodes().stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())
                             ))
@@ -388,6 +833,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
         }
         return "Unknown";
     }
+
 
 
 }

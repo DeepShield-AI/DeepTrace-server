@@ -21,7 +21,7 @@ public class QueryTracesParam {
     private List<String> statusCodes;
 
     /**
-     * 最晚的开始时间，值为秒级时间戳
+     * 最晚的开始时间，值为秒级时间戳  eg:1753923183986
      */
     private Long startTime;
 

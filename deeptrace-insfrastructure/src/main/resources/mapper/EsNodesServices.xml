@@ -151,5 +151,7 @@ updated_at = values(updated_at)
         delete from collector_user_config where id = #{id}
     </delete>
 
+
+
 </mapper>
 

@@ -7,7 +7,6 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.entity.Traces;
 import com.qcl.entity.param.QueryTracesParam;
@@ -15,9 +14,6 @@ import com.qcl.entity.statistic.TimeBucketResult;
 import com.qcl.entity.statistic.*;
 import com.qcl.service.EsTraceService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.elasticsearch.client.elc.NativeQuery;
-import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
-import org.springframework.data.elasticsearch.core.SearchHits;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
 import org.springframework.stereotype.Service;
@@ -221,15 +217,15 @@ public class EsTraceServiceImpl implements EsTraceService {
                             if (percentilesAgg.isTdigestPercentiles()) {
                                 var tdigestPercentiles = percentilesAgg.tdigestPercentiles();
                                 if (tdigestPercentiles.values() != null) {
-                                    // 获取 90th 百分位值
-                                    p90Duration = tdigestPercentiles.values().keyed().get("75.0");
+                                    // 获取 75th 百分位值
+                                    p75Duration = tdigestPercentiles.values().keyed().get("75.0");
                                 }
                             }
                             // 如果是原来的 PercentilesBucket 类型
                             else if (percentilesAgg.isPercentilesBucket()) {
                                 var percentiles = percentilesAgg.percentilesBucket();
                                 if (percentiles.values() != null) {
-                                    p90Duration = percentiles.values()._get();
+                                    p75Duration = percentiles.values()._get();
                                 }
                             }
                         }
@@ -264,15 +260,15 @@ public class EsTraceServiceImpl implements EsTraceService {
                             if (percentilesAgg.isTdigestPercentiles()) {
                                 var tdigestPercentiles = percentilesAgg.tdigestPercentiles();
                                 if (tdigestPercentiles.values() != null) {
-                                    // 获取 90th 百分位值
-                                    p90Duration = tdigestPercentiles.values().keyed().get("99.0");
+                                    // 获取 99th 百分位值
+                                    p99Duration = tdigestPercentiles.values().keyed().get("99.0");
                                 }
                             }
                             // 如果是原来的 PercentilesBucket 类型
                             else if (percentilesAgg.isPercentilesBucket()) {
                                 var percentiles = percentilesAgg.percentilesBucket();
                                 if (percentiles.values() != null) {
-                                    p90Duration = percentiles.values()._get();
+                                    p99Duration = percentiles.values()._get();
                                 }
                             }
                         }
@@ -410,12 +406,12 @@ public class EsTraceServiceImpl implements EsTraceService {
         }
 
         // protocol 条件
-        if (queryTracesParam.getProtocol() != null && !queryTracesParam.getProtocol().isEmpty()) {
+        if (queryTracesParam.getProtocols() != null && !queryTracesParam.getProtocols().isEmpty()) {
             mainMustConditions.add(Query.of(q -> q
                     .terms(t -> t
                             .field("protocol.keyword")
                             .terms(t2 -> t2.value(
-                                    queryTracesParam.getProtocol().stream()
+                                    queryTracesParam.getProtocols().stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())
                             ))
@@ -423,12 +419,12 @@ public class EsTraceServiceImpl implements EsTraceService {
             ));
         }
         // status 条件
-        if (queryTracesParam.getStatus() != null && !queryTracesParam.getStatus().isEmpty()) {
+        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
             mainMustConditions.add(Query.of(q -> q
                     .terms(t -> t
                             .field("status_code.keyword")
                             .terms(t2 -> t2.value(
-                                    queryTracesParam.getStatus().stream()
+                                    queryTracesParam.getStatusCodes().stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())
                             ))
