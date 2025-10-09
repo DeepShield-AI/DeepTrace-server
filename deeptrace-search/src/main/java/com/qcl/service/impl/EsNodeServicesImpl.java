@@ -40,7 +40,11 @@ public class EsNodeServicesImpl implements EsNodesServices {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
-
+    @Retryable(
+            retryFor = {SocketException.class, ConnectException.class},
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 100, multiplier = 2)
+    )
     @Override
     public List<StatusTimeBucketResult> getStatusCountByMinute(QueryTracesParam queryTracesParam){
         try {
