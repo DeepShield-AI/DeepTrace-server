@@ -2,6 +2,8 @@ package com.qcl.service.impl;
 
 import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import com.qcl.entity.Edges;
+import com.qcl.entity.Nodes;
 import com.qcl.exception.BizException;
 import com.qcl.entity.graph.EdgeStatsResult;
 import com.qcl.entity.graph.NodeStatsResult;
@@ -17,10 +19,14 @@ import com.qcl.entity.Traces;
 import lombok.RequiredArgsConstructor;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.ConnectException;
+import java.net.SocketException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,12 +43,17 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
 
 
 
-    @Override
     /**
      * 按节点分组统计信息
      * @param queryTracesParam 筛选条件
      * @return 节点分组统计结果
      */
+    @Retryable(
+            retryFor = {SocketException.class, ConnectException.class},
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 100, multiplier = 2)
+    )
+    @Override
     public List<NodeStatsResult> getNodesStats(QueryTracesParam queryTracesParam) {
 
         if(queryTracesParam.getStartTime() == null){
@@ -61,7 +72,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             Long timeWindow = queryTracesParam.getEndTime() - queryTracesParam.getStartTime();
 
             // 2. 构建聚合查询
-            SearchResponse<Traces> response = elasticsearchClient.search(s -> s
+            SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index("nodes")
                             .size(0) // 不返回具体文档
                             .query(query)
@@ -103,7 +114,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                                             )
                                     )
                             ),
-                    Traces.class
+                    Nodes.class
             );
 
             // 3. 解析聚合结果
@@ -314,20 +325,31 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
      * @param queryTracesParam 筛选条件
      * @return 边分组统计结果
      */
+    @Retryable(
+            retryFor = {SocketException.class, ConnectException.class},
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 100, multiplier = 2)
+    )
+    @Override
     public List<EdgeStatsResult> getEdgesStats(QueryTracesParam queryTracesParam) {
 
         if(queryTracesParam.getStartTime() == null){
             throw new BizException("startTime is required");
         }
+        if (queryTracesParam.getEndTime() == null ||
+                queryTracesParam.getEndTime() <= queryTracesParam.getStartTime()){
+            throw new BizException("endTime is required or endTime must be greater than startTime");
+        }
 
         try {
             // 1. 构建查询条件
-            Query query = buildQueryToNode(queryTracesParam);
+            Query query = buildQueryToEdge(queryTracesParam);
 
-            Long timeWindow = (System.currentTimeMillis() - queryTracesParam.getStartTime()) / 1000;
+            // 计算时间窗口（秒）
+            Long timeWindow = queryTracesParam.getEndTime() - queryTracesParam.getStartTime();
 
             // 2. 构建聚合查询
-            SearchResponse<Traces> response = elasticsearchClient.search(s -> s
+            SearchResponse<Edges> response = elasticsearchClient.search(s -> s
                             .index("edges")
                             .size(0) // 不返回具体文档
                             .query(query)
@@ -357,12 +379,12 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                                                             ))
                                                     )
                                                     .script(sc -> sc
-                                                            .source("params.count / 3600")//todo: 改成 timeWindow
+                                                            .source("params.count / " + timeWindow)
                                                     )
                                             )
                                     )
                             ),
-                    Traces.class
+                    Edges.class
             );
 
             // 3. 解析聚合结果
@@ -395,9 +417,10 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                     Double totalCount = 0.0;
                     Double qps = 0.0;
 
-                    // 获取平均响应时延
+                    // 获取平均响应时延 四舍五入保留4位小数
                     if (bucket.aggregations().containsKey("avg_duration")) {
-                        avgDuration = bucket.aggregations().get("avg_duration").avg().value();
+                        BigDecimal bd = new BigDecimal(bucket.aggregations().get("avg_duration").avg().value());
+                        avgDuration = bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
                     }
 
                     // 获取总请求数
@@ -405,11 +428,12 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                         totalCount = bucket.aggregations().get("total_count").valueCount().value();
                     }
 
-                    // 获取 QPS
+                    // 获取 QPS 四舍五入保留4位小数
                     if (bucket.aggregations().containsKey("qps")) {
                         Aggregate aggregate = bucket.aggregations().get("qps");
                         if (aggregate.isSimpleValue()) {
-                            qps = aggregate.simpleValue().value();
+                            BigDecimal bd = new BigDecimal(aggregate.simpleValue().value());
+                            qps = bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
                         }
                     }
 
@@ -429,6 +453,16 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
     private Query buildQueryToEdge(QueryTracesParam queryTracesParam) {
         // 构建过滤条件
         List<Query> filterConditions = new ArrayList<>();
+
+        //容器名称 containerName
+        if (queryTracesParam.getContainerName() != null && !queryTracesParam.getContainerName().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .match(m -> m
+                            .field("trace_tags.component_names.keyword")
+                            .query(queryTracesParam.getContainerName())
+                    )
+            ));
+        }
 
         // endpoints 条件
         if (queryTracesParam.getEndpoints() != null && !queryTracesParam.getEndpoints().isEmpty()) {
@@ -477,43 +511,54 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             filterConditions.add(Query.of(q -> q
                     .range(r -> r
                             .term(t-> t
-                                    .field("metric.start_times")
+                                    .field("metric.start_time")
                                     .gte(queryTracesParam.getStartTime().toString())
+                            )
+                    )
+            ));
+        }
+        //end_time 范围条件
+        if (queryTracesParam.getEndTime() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.start_time")
+                                    .lte(queryTracesParam.getEndTime().toString())
                             )
                     )
             ));
         }
 
         // e2e_duration 范围查询条件
-        if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.duration")
-                                    .gte(queryTracesParam.getMinE2eDuration().toString())
-                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
-                            )
-                    )
-            ));
-        } else if (queryTracesParam.getMinE2eDuration() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.duration")
-                                    .gte(queryTracesParam.getMinE2eDuration().toString())
-                            )
-                    )
-            ));
-        } else if (queryTracesParam.getMaxE2eDuration() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.duration")
-                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
-                            )
-                    )
-            ));
-        }
+//        if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
+//            filterConditions.add(Query.of(q -> q
+//                    .range(r -> r
+//                            .term(t-> t
+//                                    .field("metric.duration")
+//                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+//                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+//                            )
+//                    )
+//            ));
+//        } else if (queryTracesParam.getMinE2eDuration() != null) {
+//            filterConditions.add(Query.of(q -> q
+//                    .range(r -> r
+//                            .term(t-> t
+//                                    .field("metric.duration")
+//                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+//                            )
+//                    )
+//            ));
+//        } else if (queryTracesParam.getMaxE2eDuration() != null) {
+//            filterConditions.add(Query.of(q -> q
+//                    .range(r -> r
+//                            .term(t-> t
+//                                    .field("metric.duration")
+//                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+//                            )
+//                    )
+//            ));
+//        }
 
 
         // 构建最终查询
