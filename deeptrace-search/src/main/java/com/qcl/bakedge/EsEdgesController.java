@@ -3,11 +3,10 @@ package com.qcl.bakedge;
 import com.qcl.constants.TraceSearchTypeEnum;
 import com.qcl.entity.Edges;
 import com.qcl.entity.EndpointProtocolStatsResult;
-import com.qcl.entity.Nodes;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
-import com.qcl.entity.statistic.TimeBucketResult;
+import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.service.EsTraceService;
 import com.qcl.vo.PageResult;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +63,7 @@ public class EsEdgesController {
         switch (searchType) {
             case COUNT:
                 // 请求数时序统计
-                List<TimeBucketResult> countResult = esTraceService.getTraceCountByMinute(queryTracesParam);
+                List<TimeBucketCountResult> countResult = esTraceService.getTraceCountByMinute(queryTracesParam);
                 return ResponseEntity.ok(countResult);
 
             case STATUSCOUNT:

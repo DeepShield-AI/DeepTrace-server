@@ -10,7 +10,7 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.entity.Traces;
 import com.qcl.entity.param.QueryTracesParam;
-import com.qcl.entity.statistic.TimeBucketResult;
+import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.entity.statistic.*;
 import com.qcl.service.EsTraceService;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ public class EsTraceServiceImpl implements EsTraceService {
      * 请求数时序统计
      * @param queryTracesParam 筛选条件
      */
-    public List<TimeBucketResult> getTraceCountByMinute(QueryTracesParam queryTracesParam) {
+    public List<TimeBucketCountResult> getTraceCountByMinute(QueryTracesParam queryTracesParam) {
         try {
             // 1. 构建查询条件
             Query query = buildQuery(queryTracesParam);
@@ -57,7 +57,7 @@ public class EsTraceServiceImpl implements EsTraceService {
             );
 
             // 3. 解析聚合结果
-            List<TimeBucketResult> result = new ArrayList<>();
+            List<TimeBucketCountResult> result = new ArrayList<>();
 
             if (response.aggregations() != null && response.aggregations().containsKey("per_minute")) {
                 DateHistogramAggregate dateHistogram =
@@ -65,7 +65,7 @@ public class EsTraceServiceImpl implements EsTraceService {
 
                 for (DateHistogramBucket bucket :
                         dateHistogram.buckets().array()) {
-                    result.add(new TimeBucketResult(bucket.key(), bucket.docCount()));
+                    result.add(new TimeBucketCountResult(bucket.key(), bucket.docCount()));
                 }
             }
 
@@ -120,7 +120,7 @@ public class EsTraceServiceImpl implements EsTraceService {
                         statusGroups.buckets().array()) {
 
                     String statusCode = bucket.key().stringValue();
-                    List<TimeBucketResult> timeBuckets = new ArrayList<>();
+                    List<TimeBucketCountResult> timeBuckets = new ArrayList<>();
 
                     // 解析时间桶数据
                     if (bucket.aggregations() != null && bucket.aggregations().containsKey("per_minute")) {
@@ -128,7 +128,7 @@ public class EsTraceServiceImpl implements EsTraceService {
                                 bucket.aggregations().get("per_minute").dateHistogram();
 
                         for (DateHistogramBucket timeBucket : dateHistogram.buckets().array()) {
-                            timeBuckets.add(new TimeBucketResult(timeBucket.key(), timeBucket.docCount()));
+                            timeBuckets.add(new TimeBucketCountResult(timeBucket.key(), timeBucket.docCount()));
                         }
                     }
 

@@ -2,13 +2,10 @@ package com.qcl.controller;
 
 import com.qcl.constants.TraceSearchTypeEnum;
 import com.qcl.entity.Traces;
-import com.qcl.entity.graph.EdgeStatsResult;
-import com.qcl.entity.graph.NodeStatsResult;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
-import com.qcl.entity.statistic.TimeBucketResult;
-import com.qcl.service.EsTraceGraphService;
+import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.service.EsTraceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/api/esTraces")
@@ -52,7 +47,7 @@ public class EsTraceController {
         switch (searchType) {
             case COUNT:
                 // 请求数时序统计
-                List<TimeBucketResult> countResult = esTraceService.getTraceCountByMinute(queryTracesParam);
+                List<TimeBucketCountResult> countResult = esTraceService.getTraceCountByMinute(queryTracesParam);
                 return ResponseEntity.ok(countResult);
 
             case STATUSCOUNT:

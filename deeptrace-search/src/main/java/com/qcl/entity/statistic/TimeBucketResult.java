@@ -1,19 +1,20 @@
 package com.qcl.entity.statistic;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
+/**
+ * 按分钟/小时等 统计（统一返回给前端的结构）
+ */
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
 public class TimeBucketResult extends Object{
     private Long timeKey;
-    private Long docCount;
-    private String statusCode;
+    private Object value;
 
-    public TimeBucketResult(Long timeKey, Long docCount) {
+    public TimeBucketResult(Long timeKey, Object docCount) {
         this.timeKey = timeKey;
-        this.docCount = docCount;
+        this.value = docCount;
     }
 }

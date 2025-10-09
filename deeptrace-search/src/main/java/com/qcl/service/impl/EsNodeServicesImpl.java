@@ -8,12 +8,13 @@ import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.entity.EndpointProtocolStatsResult;
 import com.qcl.entity.Nodes;
 import com.qcl.entity.Traces;
 import com.qcl.entity.param.QueryTracesParam;
+import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
+import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.entity.statistic.TimeBucketResult;
 import com.qcl.exception.BizException;
 import com.qcl.service.EsNodesServices;
@@ -38,15 +39,129 @@ import java.util.stream.Collectors;
 public class EsNodeServicesImpl implements EsNodesServices {
 
     private final ElasticsearchClient elasticsearchClient;
-    // 添加 ObjectMapper 用于序列化查询
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
 
     @Retryable(
             retryFor = {SocketException.class, ConnectException.class},
             maxAttempts = 5,
-            backoff = @Backoff(delay = 100, multiplier = 2)
-    )
+            backoff = @Backoff(delay = 100, multiplier = 2))
+    @Override
+    public List<TimeBucketResult> requestCountByMinute(QueryTracesParam queryTracesParam) {
+        try {
+            // 1. 构建查询条件
+            Query query = buildQuery(queryTracesParam);
+
+            // 2. 构建聚合查询
+            SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
+                            .index("nodes")
+                            .size(0) // 不返回具体文档
+                            .query(query)
+                            .aggregations("per_minute", a -> a
+                                    .dateHistogram(d -> d
+                                            .field("metric.start_time")
+                                            .timeZone("Asia/Shanghai")
+                                            .calendarInterval(CalendarInterval.Minute)
+                                            .format("yyyy-MM-dd HH:mm")
+                                            .minDocCount(0)
+                                    )
+                            ),
+                    Nodes.class
+            );
+
+            // 3. 解析聚合结果
+            List<TimeBucketResult> result = new ArrayList<>();
+
+            if (response.aggregations() != null && response.aggregations().containsKey("per_minute")) {
+                DateHistogramAggregate dateHistogram =
+                        response.aggregations().get("per_minute").dateHistogram();
+
+                for (DateHistogramBucket bucket :
+                        dateHistogram.buckets().array()) {
+                    result.add(new TimeBucketResult(bucket.key(), bucket.docCount()));
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error executing Elasticsearch aggregation query", e);
+        }
+    }
+
+    @Retryable(
+            retryFor = {SocketException.class, ConnectException.class},
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 100, multiplier = 2))
+    @Override
+    public List<TimeBucketResult> errorRateByMinute(QueryTracesParam queryTracesParam) {
+        return List.of();
+    }
+
+    @Retryable(
+            retryFor = {SocketException.class, ConnectException.class},
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 100, multiplier = 2))
+    @Override
+    public List<TimeBucketResult> latencyStatsByMinute(QueryTracesParam queryTracesParam) {
+        try {
+            // 1. 构建查询条件
+            Query query = buildQuery(queryTracesParam);
+
+            // 2. 构建聚合查询
+            SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
+                            .index("nodes")
+                            .size(0) // 不返回具体文档
+                            .query(query)
+                            .aggregations("per_minute", a -> a
+                                    .dateHistogram(d -> d
+                                            .field("metric.start_time")  // 注意：使用 start_time 而不是 begin_time
+                                            .timeZone("Asia/Shanghai")
+                                            .calendarInterval(CalendarInterval.Minute)
+                                            .format("yyyy-MM-dd HH:mm")
+                                    )
+                                    .aggregations("avg_duration",aa -> aa
+                                            .avg( avg -> avg.field("metric.duration"))
+                                    )
+                            ),
+                    Nodes.class
+            );
+
+            // 3. 解析聚合结果
+            List<TimeBucketResult> result = new ArrayList<>();
+
+            if (response.aggregations() != null && response.aggregations().containsKey("per_minute")) {
+                DateHistogramAggregate dateHistogram =
+                        response.aggregations().get("per_minute").dateHistogram();
+
+                for (DateHistogramBucket bucket : dateHistogram.buckets().array()) {
+                    Long timeKey = bucket.key();
+                    Double avgDuration = 0.0;
+
+                    // 解析平均延迟  保留四位小数
+                    if (bucket.aggregations() != null && bucket.aggregations().containsKey("avg_duration")) {
+                        BigDecimal bd = new BigDecimal(bucket.aggregations().get("avg_duration").avg().value());
+                        avgDuration = bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
+                    }
+
+                    result.add(new TimeBucketResult(
+                            timeKey,
+                            avgDuration
+                    ));
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error executing Elasticsearch latency aggregation query", e);
+        }
+    }
+
+    @Retryable(
+            retryFor = {SocketException.class, ConnectException.class},
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 100, multiplier = 2))
     @Override
     public List<StatusTimeBucketResult> getStatusCountByMinute(QueryTracesParam queryTracesParam){
         try {
@@ -86,7 +201,7 @@ public class EsNodeServicesImpl implements EsNodesServices {
                         statusGroups.buckets().array()) {
 
                     String statusCode = bucket.key().stringValue();
-                    List<TimeBucketResult> timeBuckets = new ArrayList<>();
+                    List<TimeBucketCountResult> timeBuckets = new ArrayList<>();
 
                     // 解析时间桶数据
                     if (bucket.aggregations() != null && bucket.aggregations().containsKey("per_minute")) {
@@ -94,7 +209,7 @@ public class EsNodeServicesImpl implements EsNodesServices {
                                 bucket.aggregations().get("per_minute").dateHistogram();
 
                         for (DateHistogramBucket timeBucket : dateHistogram.buckets().array()) {
-                            timeBuckets.add(new TimeBucketResult(timeBucket.key(), timeBucket.docCount()));
+                            timeBuckets.add(new TimeBucketCountResult(timeBucket.key(), timeBucket.docCount()));
                         }
                     }
 
@@ -109,6 +224,8 @@ public class EsNodeServicesImpl implements EsNodesServices {
             throw new RuntimeException("Error executing Elasticsearch nested aggregation query", e);
         }
     }
+
+
 
 
     @Retryable(

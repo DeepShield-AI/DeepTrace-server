@@ -12,5 +12,5 @@ import java.util.List;
 @NoArgsConstructor
 public class StatusTimeBucketResult {
     private String statusCode;
-    private List<TimeBucketResult> timeBuckets;
+    private List<TimeBucketCountResult> timeBuckets;
 }
