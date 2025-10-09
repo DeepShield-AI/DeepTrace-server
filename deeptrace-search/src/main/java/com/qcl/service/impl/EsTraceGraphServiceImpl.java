@@ -269,35 +269,35 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
 
         // e2e_duration 范围查询条件
         //拓扑图中的数据筛选，是筛选符合条件的trace，将符合条件的trace中所有的请求数据都统计在内。因此，不需要响应时间这类节点维度的筛选
-        if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.duration")
-                                    .gte(queryTracesParam.getMinE2eDuration().toString())
-                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
-                            )
-                    )
-            ));
-        } else if (queryTracesParam.getMinE2eDuration() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.duration")
-                                    .gte(queryTracesParam.getMinE2eDuration().toString())
-                            )
-                    )
-            ));
-        } else if (queryTracesParam.getMaxE2eDuration() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.duration")
-                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
-                            )
-                    )
-            ));
-        }
+//        if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
+//            filterConditions.add(Query.of(q -> q
+//                    .range(r -> r
+//                            .term(t-> t
+//                                    .field("metric.duration")
+//                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+//                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+//                            )
+//                    )
+//            ));
+//        } else if (queryTracesParam.getMinE2eDuration() != null) {
+//            filterConditions.add(Query.of(q -> q
+//                    .range(r -> r
+//                            .term(t-> t
+//                                    .field("metric.duration")
+//                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+//                            )
+//                    )
+//            ));
+//        } else if (queryTracesParam.getMaxE2eDuration() != null) {
+//            filterConditions.add(Query.of(q -> q
+//                    .range(r -> r
+//                            .term(t-> t
+//                                    .field("metric.duration")
+//                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+//                            )
+//                    )
+//            ));
+//        }
 
         // 构建最终查询
         return Query.of(q -> q
