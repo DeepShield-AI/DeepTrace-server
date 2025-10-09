@@ -2,6 +2,7 @@ package com.qcl.service.impl;
 
 import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import com.qcl.exception.BizException;
 import com.qcl.entity.graph.EdgeStatsResult;
 import com.qcl.entity.graph.NodeStatsResult;
 import com.qcl.entity.param.QueryTracesParam;
@@ -45,7 +46,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             Query query = buildQueryToNode(queryTracesParam);
 
             // 计算时间窗口（秒）
-//            Long timeWindow = (System.currentTimeMillis() - queryTracesParam.getStartTime()) / 1000;
+            Long timeWindow = (System.currentTimeMillis() - queryTracesParam.getStartTime()) / 1000;
 
             // 2. 构建聚合查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
@@ -110,6 +111,10 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                     Double errorRate = 0.0; // 这个查询中没有错误率
                     Double qps = 0.0;
 
+                //todo
+
+
+
                     // 获取容器名称
                     if (bucket.aggregations().containsKey("sample_doc")) {
                         Aggregate aggregate = bucket.aggregations().get("sample_doc");
@@ -118,7 +123,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                             HitsMetadata<JsonData> hitsMetadata = topHitsAgg.hits();
 
                             if (hitsMetadata.hits() != null && !hitsMetadata.hits().isEmpty()) {
-                                Hit<JsonData> hit = hitsMetadata.hits().get(0); // 获取第一个 hit
+                                Hit<JsonData> hit = hitsMetadata.hits().get(0);  // 获取第一个 hit
                                 JsonData source = hit.source();
 
                                 if (source != null) {
@@ -184,7 +189,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                             ))
                     )
             ));
-        }
+        } //end
 
         // protocols 条件
         if (queryTracesParam.getProtocols() != null && !queryTracesParam.getProtocols().isEmpty()) {
@@ -212,7 +217,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                             ))
                     )
             ));
-        }
+        }//end
 
         // start_time 范围条件
         if (queryTracesParam.getStartTime() != null) {
@@ -273,6 +278,11 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
      * @return 边分组统计结果
      */
     public List<EdgeStatsResult> getEdgesStats(QueryTracesParam queryTracesParam) {
+
+        if(queryTracesParam.getStartTime() == null){
+            throw new BizException("startTime is required");
+        }
+
         try {
             // 1. 构建查询条件
             Query query = buildQueryToNode(queryTracesParam);
