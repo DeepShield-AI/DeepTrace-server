@@ -1,9 +1,11 @@
-package com.qcl.baknode;
+package com.qcl.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.*;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,10 +13,16 @@ import com.qcl.entity.EndpointProtocolStatsResult;
 import com.qcl.entity.Nodes;
 import com.qcl.entity.Traces;
 import com.qcl.entity.param.QueryTracesParam;
+import com.qcl.exception.BizException;
+import com.qcl.service.EsNodesServices;
 import com.qcl.vo.PageResult;
 import lombok.RequiredArgsConstructor;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.net.ConnectException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,10 +38,142 @@ public class EsNodeServicesImpl implements EsNodesServices {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
+
+    private Query buildQuery(QueryTracesParam queryTracesParam) {
+        // 构建过滤条件
+        List<Query> filterConditions = new ArrayList<>();
+
+        //容器名称 containerName
+        if (queryTracesParam.getContainerName() != null && !queryTracesParam.getContainerName().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .match(m -> m
+                            .field("tag.docker_tag.container_name.keyword")
+                            .query(queryTracesParam.getContainerName())
+                    )
+            ));
+        }
+
+
+        // endpoints 条件
+        if (queryTracesParam.getEndpoints() != null && !queryTracesParam.getEndpoints().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("tag.ebpf_tag.endpoint.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getEndpoints().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        } //end
+
+        // protocols 条件
+        if (queryTracesParam.getProtocols() != null && !queryTracesParam.getProtocols().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("tag.ebpf_tag.protocol.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getProtocols().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+
+        // status codes 条件  todo待数据库中有数据后需要修改为节点自身的status_code
+        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("trace_tags.status_codes.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getStatusCodes().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }//end
+
+        // start_time 范围条件
+        if (queryTracesParam.getStartTime() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.start_time")
+                                    .gte(queryTracesParam.getStartTime().toString())
+                            )
+                    )
+            ));
+        }
+        //end_time 范围条件
+        if (queryTracesParam.getEndTime() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.start_time")
+                                    .lte(queryTracesParam.getEndTime().toString())
+                            )
+                    )
+            ));
+        }
+
+        // e2e_duration 范围查询条件
+        if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+                            )
+                    )
+            ));
+        } else if (queryTracesParam.getMinE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+                            )
+                    )
+            ));
+        } else if (queryTracesParam.getMaxE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+                            )
+                    )
+            ));
+        }
+
+        // 构建最终查询
+        return Query.of(q -> q
+                .bool(b -> b
+                        .filter(filterConditions)
+                )
+        );
+    }
+
+    @Retryable(
+            retryFor = {SocketException.class, ConnectException.class},
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 100, multiplier = 2)
+    )
     @Override
     public PageResult<Nodes> queryByPage(QueryTracesParam queryTracesParam) {
+        if(queryTracesParam.getStartTime() == null){
+            throw new BizException("startTime is required");
+        }
+        if (queryTracesParam.getEndTime() == null ||
+                queryTracesParam.getEndTime() <= queryTracesParam.getStartTime()){
+            throw new BizException("endTime is required or endTime must be greater than startTime");
+        }
         try {
-//            Query finalQuery = buildQuery(queryTracesParam);
+            Query finalQuery = buildQuery(queryTracesParam);
 
             // 4.构建动态排序条件
             List<SortOptions> sortOptions = new ArrayList<>();
@@ -68,7 +208,7 @@ public class EsNodeServicesImpl implements EsNodesServices {
             // 5. 执行查询
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index("nodes")
-//                            .query(finalQuery)
+                            .query(finalQuery)
                             .from(from)
                             .size(pageSize)
                             .sort(sortOptions)
