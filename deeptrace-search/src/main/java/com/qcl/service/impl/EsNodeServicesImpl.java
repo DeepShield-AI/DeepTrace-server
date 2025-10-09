@@ -23,6 +23,8 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -58,7 +60,7 @@ public class EsNodeServicesImpl implements EsNodesServices {
                             .query(query)
                             .aggregations("status_groups", a -> a
                                     .terms(t -> t
-                                            .field("tag.ebpf_tag.protocol.keyword") // todo 等数据库有节点的status_code后，需要按 status_code 分组 ：metric.status_code.keyword
+                                            .field("status_code.keyword") //
                                             .size(10)
                                     )
                                     .aggregations("per_minute",aa -> aa
@@ -190,6 +192,11 @@ public class EsNodeServicesImpl implements EsNodesServices {
         }
     }
 
+    @Retryable(
+            retryFor = {SocketException.class, ConnectException.class},
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 100, multiplier = 2)
+    )
     @Override
     /**
      * 按端点和协议分组统计信息
@@ -199,13 +206,13 @@ public class EsNodeServicesImpl implements EsNodesServices {
     public List<EndpointProtocolStatsResult> getEndpointProtocolStats(QueryTracesParam queryTracesParam) {
         try {
             // 1. 构建查询条件
-//            Query query = buildQueryToNode(queryTracesParam);
+            Query query = buildQuery(queryTracesParam);
 
             // 2. 构建聚合查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index("nodes")
                             .size(0) // 不返回具体文档
-//                            .query(query)
+                            .query(query)
                             .aggregations("group_by_endpoint_protocol", a -> a
                                     .composite(c -> c
                                             .sources(List.of(
@@ -222,7 +229,7 @@ public class EsNodeServicesImpl implements EsNodesServices {
                                                             )
                                                     ))
                                             ))
-                                            .size(1000) // 设置桶的数量
+                                            .size(1000) // 限定数据的数量，预防es崩溃
                                     )
                                     .aggregations("total_requests", aa -> aa
                                             .valueCount(vc -> vc
@@ -347,13 +354,15 @@ public class EsNodeServicesImpl implements EsNodesServices {
                     if (bucket.aggregations().containsKey("request_rate")) {
                         Aggregate aggregate = bucket.aggregations().get("request_rate");
                         if (aggregate.isSimpleValue()) {
-                            requestRate = aggregate.simpleValue().value();
+                            BigDecimal bd = new BigDecimal(aggregate.simpleValue().value());
+                            requestRate = bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
                         }
                     }
 
                     // 获取平均响应时延
                     if (bucket.aggregations().containsKey("avg_duration")) {
-                        avgDuration = bucket.aggregations().get("avg_duration").avg().value();
+                        BigDecimal bd = new BigDecimal(bucket.aggregations().get("avg_duration").avg().value());
+                        avgDuration = bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
                     }
 
                     // 获取 75% 分位响应时延
@@ -376,6 +385,7 @@ public class EsNodeServicesImpl implements EsNodesServices {
                             }
                         }
                     }
+
 
                     // 获取 99% 分位响应时延
                     if (bucket.aggregations().containsKey("p99_duration")) {
@@ -411,15 +421,20 @@ public class EsNodeServicesImpl implements EsNodesServices {
                     if (bucket.aggregations().containsKey("error_rate")) {
                         Aggregate aggregate = bucket.aggregations().get("error_rate");
                         if (aggregate.isSimpleValue()) {
-                            errorRate = aggregate.simpleValue().value();
+                            BigDecimal bd = new BigDecimal(aggregate.simpleValue().value());
+                            errorRate = bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
                         }
                     }
 
                     // 创建结果对象
                     result.add(new EndpointProtocolStatsResult(
                             endpoint, protocol, totalRequests, minTime, maxTime,
-                            requestRate, avgDuration, p75Duration, p99Duration,
-                            errorCount, errorRate));
+                            requestRate,
+                            avgDuration,
+                            p75Duration,
+                            p99Duration,
+                            errorCount,
+                            errorRate));
                 }
             }
 
@@ -474,11 +489,11 @@ public class EsNodeServicesImpl implements EsNodesServices {
             ));
         }
 
-        // status codes 条件  todo待数据库中有数据后需要修改为节点自身的status_code
+        // status codes 条件
         if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
             filterConditions.add(Query.of(q -> q
                     .terms(t -> t
-                            .field("trace_tags.status_codes.keyword")
+                            .field("status_code.keyword")
                             .terms(t2 -> t2.value(
                                     queryTracesParam.getStatusCodes().stream()
                                             .map(FieldValue::of)
