@@ -13,6 +13,8 @@ import com.qcl.entity.EndpointProtocolStatsResult;
 import com.qcl.entity.Nodes;
 import com.qcl.entity.Traces;
 import com.qcl.entity.param.QueryTracesParam;
+import com.qcl.entity.statistic.StatusTimeBucketResult;
+import com.qcl.entity.statistic.TimeBucketResult;
 import com.qcl.exception.BizException;
 import com.qcl.service.EsNodesServices;
 import com.qcl.vo.PageResult;
@@ -39,124 +41,69 @@ public class EsNodeServicesImpl implements EsNodesServices {
 
 
 
-    private Query buildQuery(QueryTracesParam queryTracesParam) {
-        // 构建过滤条件
-        List<Query> filterConditions = new ArrayList<>();
+    @Override
+    public List<StatusTimeBucketResult> getStatusCountByMinute(QueryTracesParam queryTracesParam){
+        try {
+            // 1. 构建查询条件
+            Query query = buildQuery(queryTracesParam);
 
-        //容器名称 containerName
-        if (queryTracesParam.getContainerName() != null && !queryTracesParam.getContainerName().isEmpty()) {
-            filterConditions.add(Query.of(q -> q
-                    .match(m -> m
-                            .field("tag.docker_tag.container_name.keyword")
-                            .query(queryTracesParam.getContainerName())
-                    )
-            ));
+            // 2. 构建嵌套聚合查询
+            SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
+                            .index("nodes")
+                            .size(0) // 不返回具体文档
+                            .query(query)
+                            .aggregations("status_groups", a -> a
+                                    .terms(t -> t
+                                            .field("tag.ebpf_tag.protocol.keyword") // todo 等数据库有节点的status_code后，需要按 status_code 分组 ：metric.status_code.keyword
+                                            .size(10)
+                                    )
+                                    .aggregations("per_minute",aa -> aa
+                                            .dateHistogram( d -> d
+                                                    .field("metric.start_time")
+                                                    .timeZone("Asia/Shanghai")
+                                                    .calendarInterval(CalendarInterval.Minute)
+                                                    .format("yyyy-MM-dd HH:mm")
+                                            )
+                                    )
+                            ),
+                    Nodes.class
+            );
+
+            // 3. 解析聚合结果
+            List<StatusTimeBucketResult> result = new ArrayList<>();
+
+            if (response.aggregations() != null && response.aggregations().containsKey("status_groups")) {
+                StringTermsAggregate statusGroups =
+                        response.aggregations().get("status_groups").sterms();
+
+                for (StringTermsBucket bucket :
+                        statusGroups.buckets().array()) {
+
+                    String statusCode = bucket.key().stringValue();
+                    List<TimeBucketResult> timeBuckets = new ArrayList<>();
+
+                    // 解析时间桶数据
+                    if (bucket.aggregations() != null && bucket.aggregations().containsKey("per_minute")) {
+                        DateHistogramAggregate dateHistogram =
+                                bucket.aggregations().get("per_minute").dateHistogram();
+
+                        for (DateHistogramBucket timeBucket : dateHistogram.buckets().array()) {
+                            timeBuckets.add(new TimeBucketResult(timeBucket.key(), timeBucket.docCount()));
+                        }
+                    }
+
+                    result.add(new StatusTimeBucketResult(statusCode, timeBuckets));
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error executing Elasticsearch nested aggregation query", e);
         }
-
-
-        // endpoints 条件
-        if (queryTracesParam.getEndpoints() != null && !queryTracesParam.getEndpoints().isEmpty()) {
-            filterConditions.add(Query.of(q -> q
-                    .terms(t -> t
-                            .field("tag.ebpf_tag.endpoint.keyword")
-                            .terms(t2 -> t2.value(
-                                    queryTracesParam.getEndpoints().stream()
-                                            .map(FieldValue::of)
-                                            .collect(Collectors.toList())
-                            ))
-                    )
-            ));
-        } //end
-
-        // protocols 条件
-        if (queryTracesParam.getProtocols() != null && !queryTracesParam.getProtocols().isEmpty()) {
-            filterConditions.add(Query.of(q -> q
-                    .terms(t -> t
-                            .field("tag.ebpf_tag.protocol.keyword")
-                            .terms(t2 -> t2.value(
-                                    queryTracesParam.getProtocols().stream()
-                                            .map(FieldValue::of)
-                                            .collect(Collectors.toList())
-                            ))
-                    )
-            ));
-        }
-
-        // status codes 条件  todo待数据库中有数据后需要修改为节点自身的status_code
-        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
-            filterConditions.add(Query.of(q -> q
-                    .terms(t -> t
-                            .field("trace_tags.status_codes.keyword")
-                            .terms(t2 -> t2.value(
-                                    queryTracesParam.getStatusCodes().stream()
-                                            .map(FieldValue::of)
-                                            .collect(Collectors.toList())
-                            ))
-                    )
-            ));
-        }//end
-
-        // start_time 范围条件
-        if (queryTracesParam.getStartTime() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.start_time")
-                                    .gte(queryTracesParam.getStartTime().toString())
-                            )
-                    )
-            ));
-        }
-        //end_time 范围条件
-        if (queryTracesParam.getEndTime() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.start_time")
-                                    .lte(queryTracesParam.getEndTime().toString())
-                            )
-                    )
-            ));
-        }
-
-        // e2e_duration 范围查询条件
-        if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.duration")
-                                    .gte(queryTracesParam.getMinE2eDuration().toString())
-                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
-                            )
-                    )
-            ));
-        } else if (queryTracesParam.getMinE2eDuration() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.duration")
-                                    .gte(queryTracesParam.getMinE2eDuration().toString())
-                            )
-                    )
-            ));
-        } else if (queryTracesParam.getMaxE2eDuration() != null) {
-            filterConditions.add(Query.of(q -> q
-                    .range(r -> r
-                            .term(t-> t
-                                    .field("metric.duration")
-                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
-                            )
-                    )
-            ));
-        }
-
-        // 构建最终查询
-        return Query.of(q -> q
-                .bool(b -> b
-                        .filter(filterConditions)
-                )
-        );
     }
+
 
     @Retryable(
             retryFor = {SocketException.class, ConnectException.class},
@@ -480,6 +427,124 @@ public class EsNodeServicesImpl implements EsNodesServices {
         }
     }
 
+    private Query buildQuery(QueryTracesParam queryTracesParam) {
+        // 构建过滤条件
+        List<Query> filterConditions = new ArrayList<>();
+
+        //容器名称 containerName
+        if (queryTracesParam.getContainerName() != null && !queryTracesParam.getContainerName().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .match(m -> m
+                            .field("tag.docker_tag.container_name.keyword")
+                            .query(queryTracesParam.getContainerName())
+                    )
+            ));
+        }
+
+
+        // endpoints 条件
+        if (queryTracesParam.getEndpoints() != null && !queryTracesParam.getEndpoints().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("tag.ebpf_tag.endpoint.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getEndpoints().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        } //end
+
+        // protocols 条件
+        if (queryTracesParam.getProtocols() != null && !queryTracesParam.getProtocols().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("tag.ebpf_tag.protocol.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getProtocols().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }
+
+        // status codes 条件  todo待数据库中有数据后需要修改为节点自身的status_code
+        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("trace_tags.status_codes.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getStatusCodes().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
+                    )
+            ));
+        }//end
+
+        // start_time 范围条件
+        if (queryTracesParam.getStartTime() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.start_time")
+                                    .gte(queryTracesParam.getStartTime().toString())
+                            )
+                    )
+            ));
+        }
+        //end_time 范围条件
+        if (queryTracesParam.getEndTime() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.start_time")
+                                    .lte(queryTracesParam.getEndTime().toString())
+                            )
+                    )
+            ));
+        }
+
+        // e2e_duration 范围查询条件
+        if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+                            )
+                    )
+            ));
+        } else if (queryTracesParam.getMinE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .gte(queryTracesParam.getMinE2eDuration().toString())
+                            )
+                    )
+            ));
+        } else if (queryTracesParam.getMaxE2eDuration() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.duration")
+                                    .lte(queryTracesParam.getMaxE2eDuration().toString())
+                            )
+                    )
+            ));
+        }
+
+        // 构建最终查询
+        return Query.of(q -> q
+                .bool(b -> b
+                        .filter(filterConditions)
+                )
+        );
+    }
 
 
 }

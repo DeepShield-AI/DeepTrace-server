@@ -27,8 +27,6 @@ public class EsNodesController {
     @Autowired
     private EsNodesServices esNodeServices;
 
-    @Autowired
-    private EsTraceService esTraceService;
 
 
     @RequestMapping(value = "/log/queryByPage", method = RequestMethod.GET)
@@ -47,38 +45,10 @@ public class EsNodesController {
 
 
     //todo
-    @RequestMapping(value = "/statistic", method = RequestMethod.GET)
-    public ResponseEntity<?> statistic(@ModelAttribute QueryTracesParam queryTracesParam,
-                                    @RequestParam(required = false) String type) {
-        // 参数校验
-        if (type == null || type.isEmpty()) {
-            return ResponseEntity.badRequest().body( "查询参数不能为空");
-        }
-
-        // 根据type参数调用不同的方法
-        TraceSearchTypeEnum searchType = TraceSearchTypeEnum.fromCode(type);
-        if (searchType == null) {
-            return ResponseEntity.badRequest().body("无效的搜索类型: " + type);
-        }
-
-        switch (searchType) {
-            case COUNT:
-                // 请求数时序统计
-                List<TimeBucketResult> countResult = esTraceService.getTraceCountByMinute(queryTracesParam);
-                return ResponseEntity.ok(countResult);
-
-            case STATUSCOUNT:
-                // 状态码分组统计
-                List<StatusTimeBucketResult> statusResult = esTraceService.getStatusCountByMinute(queryTracesParam);
-                return ResponseEntity.ok(statusResult);
-
-            case LATENCYSTATS:
-                // 延迟统计
-                List<LatencyTimeBucketResult> latencyResult = esTraceService.getLatencyStatsByMinute(queryTracesParam);
-                return ResponseEntity.ok(latencyResult);
-            default:
-                return ResponseEntity.badRequest().body("无效的搜索类型: " + type);
-        }
+    @RequestMapping(value = "/statistic/status", method = RequestMethod.GET)
+    public ResponseEntity<?> statistic(@ModelAttribute QueryTracesParam queryTracesParam) {
+        List<StatusTimeBucketResult> statusResult = esNodeServices.getStatusCountByMinute(queryTracesParam);
+        return ResponseEntity.ok(statusResult);
     }
 
 
