@@ -21,10 +21,17 @@ public class QueryTracesParam {
     private List<String> statusCodes;
 
     /**
-     * 最晚的开始时间，值为秒级时间戳  eg:1753923183986
+     * 最晚的开始时间，值为秒级时间戳  eg:1755926183
      */
     private Long startTime;
+    /**
+     * 最早的结束时间，值为秒级时间戳  eg:1755926183
+     */
+    private Long endTime;
 
+    /**
+     * 容器名称
+     */
     private String containerName;
     /**
      * 最低响应时间

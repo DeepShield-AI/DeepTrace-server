@@ -19,6 +19,9 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,12 +44,21 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
      * @return 节点分组统计结果
      */
     public List<NodeStatsResult> getNodesStats(QueryTracesParam queryTracesParam) {
+
+        if(queryTracesParam.getStartTime() == null){
+            throw new BizException("startTime is required");
+        }
+        if (queryTracesParam.getEndTime() == null ||
+                queryTracesParam.getEndTime() <= queryTracesParam.getStartTime()){
+            throw new BizException("endTime is required or endTime must be greater than startTime");
+        }
+
         try {
             // 1. 构建查询条件
             Query query = buildQueryToNode(queryTracesParam);
 
             // 计算时间窗口（秒）
-            Long timeWindow = (System.currentTimeMillis() - queryTracesParam.getStartTime()) / 1000;
+            Long timeWindow = queryTracesParam.getEndTime() - queryTracesParam.getStartTime();
 
             // 2. 构建聚合查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
@@ -86,7 +98,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                                                             ))
                                                     )
                                                     .script(sc -> sc
-                                                            .source("params.count / " + 3600)
+                                                            .source("params.count / " + timeWindow)
                                                     )
                                             )
                                     )
@@ -110,10 +122,6 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                     Double totalCount = 0.0;
                     Double errorRate = 0.0; // 这个查询中没有错误率
                     Double qps = 0.0;
-
-                //todo
-
-
 
                     // 获取容器名称
                     if (bucket.aggregations().containsKey("sample_doc")) {
@@ -141,9 +149,10 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                         }
                     }
 
-                    // 获取平均响应时延
+                    // 获取平均响应时延，四舍五入保留4位小数
                     if (bucket.aggregations().containsKey("avg_duration")) {
-                        avgDuration = bucket.aggregations().get("avg_duration").avg().value();
+                        BigDecimal bd = new BigDecimal(bucket.aggregations().get("avg_duration").avg().value());
+                        avgDuration = bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
                     }
 
                     // 获取总请求数
@@ -154,8 +163,13 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                     // 获取 QPS
                     if (bucket.aggregations().containsKey("qps")) {
                         Aggregate aggregate = bucket.aggregations().get("qps");
-                        if (aggregate.isSimpleValue()) {
+                        /*if (aggregate.isSimpleValue()) {
                             qps = aggregate.simpleValue().value();
+                        }*/
+                        //四舍五入保留4位小数
+                        if (aggregate.isSimpleValue()) {
+                            BigDecimal bd = new BigDecimal(aggregate.simpleValue().value());
+                            qps = bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
                         }
                     }
 
@@ -176,6 +190,17 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
     private Query buildQueryToNode(QueryTracesParam queryTracesParam) {
         // 构建过滤条件
         List<Query> filterConditions = new ArrayList<>();
+
+        //容器名称 containerName
+        if (queryTracesParam.getContainerName() != null && !queryTracesParam.getContainerName().isEmpty()) {
+            filterConditions.add(Query.of(q -> q
+                    .match(m -> m
+                            .field("trace_tags.component_names.keyword")
+                            .query(queryTracesParam.getContainerName())
+                    )
+            ));
+        }
+
 
         // endpoints 条件
         if (queryTracesParam.getEndpoints() != null && !queryTracesParam.getEndpoints().isEmpty()) {
@@ -230,8 +255,20 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
                     )
             ));
         }
+        //end_time 范围条件
+        if (queryTracesParam.getEndTime() != null) {
+            filterConditions.add(Query.of(q -> q
+                    .range(r -> r
+                            .term(t-> t
+                                    .field("metric.start_time")
+                                    .lte(queryTracesParam.getEndTime().toString())
+                            )
+                    )
+            ));
+        }
 
         // e2e_duration 范围查询条件
+        //拓扑图中的数据筛选，是筛选符合条件的trace，将符合条件的trace中所有的请求数据都统计在内。因此，不需要响应时间这类节点维度的筛选
         if (queryTracesParam.getMinE2eDuration() != null && queryTracesParam.getMaxE2eDuration() != null) {
             filterConditions.add(Query.of(q -> q
                     .range(r -> r
