@@ -45,7 +45,7 @@ public class EsNodeServicesImpl implements EsNodesServices {
             maxAttempts = 5,
             backoff = @Backoff(delay = 100, multiplier = 2))
     @Override
-    public List<TimeBucketResult> requestCountByMinute(QueryTracesParam queryTracesParam) {
+    public List<TimeBucketResult> qpsByMinute(QueryTracesParam queryTracesParam) {
         try {
             // 1. 构建查询条件
             Query query = buildQuery(queryTracesParam);
@@ -76,7 +76,7 @@ public class EsNodeServicesImpl implements EsNodesServices {
 
                 for (DateHistogramBucket bucket :
                         dateHistogram.buckets().array()) {
-                    result.add(new TimeBucketResult(bucket.key(), bucket.docCount()));
+                    result.add(new TimeBucketResult(bucket.key(), bucket.docCount()/60));
                 }
             }
 
@@ -94,7 +94,79 @@ public class EsNodeServicesImpl implements EsNodesServices {
             backoff = @Backoff(delay = 100, multiplier = 2))
     @Override
     public List<TimeBucketResult> errorRateByMinute(QueryTracesParam queryTracesParam) {
-        return List.of();
+        try {
+            // 1. 构建查询条件
+            Query query = buildQuery(queryTracesParam);
+
+            // 2. 构建聚合查询
+            SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
+                            .index("nodes")
+                            .size(0) // 不返回具体文档
+                            .query(query)
+                            .aggregations("per_minute", a -> a
+                                    .dateHistogram(d -> d
+                                            .field("metric.start_time")
+                                            .calendarInterval(CalendarInterval.Minute)
+                                            .timeZone("Asia/Shanghai")
+                                    )
+                                    .aggregations("error_requests", aa -> aa
+                                            .filter(f -> f
+                                                    .bool(b -> b
+                                                            .mustNot(mn -> mn
+                                                                    .term(t -> t
+                                                                            .field("status_code")
+                                                                            .value(200)
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                                    .aggregations("error_ratio", aa -> aa
+                                            .bucketScript(bs -> bs
+                                                    .bucketsPath(bp -> bp
+                                                            .dict(Map.of(
+                                                                    "total", "_count",
+                                                                    "errors", "error_requests._count"
+                                                            ))
+                                                    )
+                                                    .script(sc -> sc
+                                                            .source("params.errors / params.total") //异常比例 eg:0.25
+                                                    )
+                                            )
+                                    )
+                            ),
+                    Nodes.class
+            );
+
+            // 3. 解析聚合结果
+            List<TimeBucketResult> result = new ArrayList<>();
+
+            if (response.aggregations() != null && response.aggregations().containsKey("per_minute")) {
+                DateHistogramAggregate dateHistogram = response.aggregations().get("per_minute").dateHistogram();
+
+                for (DateHistogramBucket bucket : dateHistogram.buckets().array()) {
+                    Long timeKey = bucket.key();
+                    Double errorRatio = 0.0;
+
+                    // 获取错误率 保留四位小数
+                    if (bucket.aggregations() != null && bucket.aggregations().containsKey("error_ratio")) {
+                        Aggregate aggregate = bucket.aggregations().get("error_ratio");
+                        if (aggregate.isSimpleValue()) {
+                            BigDecimal bd = new BigDecimal(aggregate.simpleValue().value());
+                            errorRatio = bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
+                        }
+                    }
+
+                    result.add(new TimeBucketResult(timeKey, errorRatio));
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error executing Elasticsearch latency aggregation query", e);
+        }
     }
 
     @Retryable(

@@ -6,7 +6,6 @@ import com.qcl.entity.EndpointProtocolStatsResult;
 import com.qcl.entity.Nodes;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
-import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.vo.PageResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -48,13 +47,13 @@ public class EsNodesController {
     }
 
     /**
-     * 按分钟统计请求个数
+     * 按分钟统计请求个数，每秒XX个
      * @param queryTracesParam
      * @return
      */
     @RequestMapping(value = "/kpi/qps", method = RequestMethod.GET)
-    public ResponseEntity<?> requestCountByMinute(@ModelAttribute QueryTracesParam queryTracesParam) {
-        List<TimeBucketResult> statusResult = esNodeServices.requestCountByMinute(queryTracesParam);
+    public ResponseEntity<?> qpsByMinute(@ModelAttribute QueryTracesParam queryTracesParam) {
+        List<TimeBucketResult> statusResult = esNodeServices.qpsByMinute(queryTracesParam);
         return ResponseEntity.ok(statusResult);
     }
 

@@ -4,7 +4,6 @@ import com.qcl.entity.EndpointProtocolStatsResult;
 import com.qcl.entity.Nodes;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
-import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.entity.statistic.TimeBucketResult;
 import com.qcl.vo.PageResult;
 
@@ -18,7 +17,7 @@ public interface EsNodesServices {
 
     List<StatusTimeBucketResult> getStatusCountByMinute(QueryTracesParam queryTracesParam);
 
-    List<TimeBucketResult> requestCountByMinute(QueryTracesParam queryTracesParam);
+    List<TimeBucketResult> qpsByMinute(QueryTracesParam queryTracesParam);
 
     List<TimeBucketResult> errorRateByMinute(QueryTracesParam queryTracesParam);
 
