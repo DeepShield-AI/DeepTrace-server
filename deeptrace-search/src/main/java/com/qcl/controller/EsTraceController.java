@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/api/esTraces")
@@ -23,6 +24,7 @@ public class EsTraceController {
 
     @Autowired
     private EsTraceService esTraceService;
+//    private com.qcl.service.EsTraceService esTraceService;
 
 
     @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
@@ -30,6 +32,16 @@ public class EsTraceController {
         List<Traces> traces = esTraceService.queryByPage(queryTracesParam);
         return ResponseEntity.ok(traces);
     }
+
+    // 滚动查询
+    @RequestMapping(value = "/scrollQuery", method = RequestMethod.GET)
+    public ResponseEntity<?> scrollQuery(QueryTracesParam param,
+                                         @RequestParam(required = false) String scrollId,
+                                         @RequestParam(required = false) Integer pageSize) {
+        Map<String, Object> result = esTraceService.scrollQuery(param, scrollId, pageSize);
+        return ResponseEntity.ok(result);
+    }
+
     @RequestMapping(value = "/statistic", method = RequestMethod.GET)
     public ResponseEntity<?> statistic(@ModelAttribute QueryTracesParam queryTracesParam,
                                     @RequestParam(required = false) String type) {
