@@ -1,4 +1,4 @@
-package com.qcl.bakedge;
+package com.qcl.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOptions;
@@ -9,9 +9,9 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.entity.Edges;
 import com.qcl.entity.EndpointProtocolStatsResult;
-import com.qcl.entity.Nodes;
 import com.qcl.entity.Traces;
 import com.qcl.entity.param.QueryTracesParam;
+import com.qcl.service.EsEdgesServices;
 import com.qcl.vo.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -73,6 +73,11 @@ public class EsEdgesServicesImpl implements EsEdgesServices {
                             .from(from)
                             .size(pageSize)
                             .sort(sortOptions)
+                            .source(src -> src
+                                    .filter(f -> f
+                                            .excludes("tag.k8s_tag")
+                                    )
+                            )
                             ,
                     Edges.class
             );

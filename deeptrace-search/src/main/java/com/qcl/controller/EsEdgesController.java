@@ -1,4 +1,4 @@
-package com.qcl.bakedge;
+package com.qcl.controller;
 
 import com.qcl.constants.TraceSearchTypeEnum;
 import com.qcl.entity.Edges;
@@ -7,6 +7,7 @@ import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.entity.statistic.TimeBucketCountResult;
+import com.qcl.service.EsEdgesServices;
 import com.qcl.service.EsTraceService;
 import com.qcl.vo.PageResult;
 import org.springframework.beans.factory.annotation.Autowired;
