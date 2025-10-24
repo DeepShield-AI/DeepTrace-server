@@ -2,10 +2,9 @@ package com.qcl.controller;
 
 import com.qcl.entity.param.QueryNodeParam;
 import com.qcl.entity.statistic.TimeBucketResult;
-import com.qcl.service.EsNodesServices;
+import com.qcl.service.EsNodeService;
 import com.qcl.entity.EndpointProtocolStatsResult;
 import com.qcl.entity.Nodes;
-import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.vo.PageResult;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +21,7 @@ import java.util.List;
 public class EsNodesController {
 
     @Autowired
-    private EsNodesServices esNodeServices;
+    private EsNodeService esNodeServices;
 
 
     /**

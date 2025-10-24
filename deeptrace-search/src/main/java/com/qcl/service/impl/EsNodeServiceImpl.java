@@ -16,7 +16,7 @@ import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.entity.statistic.TimeBucketResult;
 import com.qcl.exception.BizException;
-import com.qcl.service.EsNodesServices;
+import com.qcl.service.EsNodeService;
 import com.qcl.vo.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.annotation.Backoff;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class EsNodeServiceImpl implements EsNodesServices {
+public class EsNodeServiceImpl implements EsNodeService {
 
     private final ElasticsearchClient elasticsearchClient;
 

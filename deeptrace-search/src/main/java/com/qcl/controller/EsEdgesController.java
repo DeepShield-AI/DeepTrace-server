@@ -1,14 +1,12 @@
 package com.qcl.controller;
 
-import com.qcl.constants.TraceSearchTypeEnum;
 import com.qcl.entity.Edges;
 import com.qcl.entity.EndpointProtocolStatsResult;
-import com.qcl.entity.param.QueryTracesParam;
-import com.qcl.entity.statistic.LatencyTimeBucketResult;
+import com.qcl.entity.param.QueryEdgeParam;
+import com.qcl.entity.param.QueryNodeParam;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
-import com.qcl.entity.statistic.TimeBucketCountResult;
-import com.qcl.service.EsEdgesServices;
-import com.qcl.service.EsTraceService;
+import com.qcl.entity.statistic.TimeBucketResult;
+import com.qcl.service.EsEdgeService;
 import com.qcl.vo.PageResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,71 +14,91 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
+/**
+ * 路径分析对外API
+ */
 @Controller
 @RequestMapping("/api/esEdges")
 public class EsEdgesController {
 
     @Autowired
-    private EsEdgesServices esEdgesServices;
-
-    @Autowired
-    private EsTraceService esTraceService;
+    private EsEdgeService esEdgeService;
 
 
+    /**
+     * 路径分析--调用日志查询
+     * @param queryEdgeParam
+     * @return
+     */
     @RequestMapping(value = "/log/queryByPage", method = RequestMethod.GET)
-    public ResponseEntity<PageResult<Edges>> search(QueryTracesParam queryTracesParam) {
-        PageResult<Edges> result = esEdgesServices.queryByPage(queryTracesParam);
+    public ResponseEntity<PageResult<Edges>> search(QueryEdgeParam queryEdgeParam) {
+        PageResult<Edges> result = esEdgeService.queryByPage(queryEdgeParam);
 
         return ResponseEntity.ok(result);
     }
 
+    /**
+     * 路径分析-调用日志分组
+     * @param queryEdgeParam
+     * @return
+     */
+    @RequestMapping(value = "/statistic/status", method = RequestMethod.GET)
+    public ResponseEntity<?> statistic(@ModelAttribute QueryEdgeParam queryEdgeParam) {
+        List<StatusTimeBucketResult> statusResult = esEdgeService.getStatusCountByMinute(queryEdgeParam);
+        return ResponseEntity.ok(statusResult);
+    }
+
+
+    /**
+     * 路径分析端点列表
+     * @param queryEdgeParam
+     * @return
+     */
     @RequestMapping(value = "/queryEndpoint", method = RequestMethod.GET)
-    public ResponseEntity<List<EndpointProtocolStatsResult>> getEndpointProtocolStats(QueryTracesParam queryTracesParam) {
-        List<EndpointProtocolStatsResult> results = esEdgesServices.getEndpointProtocolStats(queryTracesParam);
+    public ResponseEntity<List<EndpointProtocolStatsResult>> getEndpointProtocolStats(QueryEdgeParam queryEdgeParam) {
+        List<EndpointProtocolStatsResult> results = esEdgeService.getEndpointProtocolStats(queryEdgeParam);
         return ResponseEntity.ok(results);
     }
 
 
 
-    //todo
-    @RequestMapping(value = "/statistic", method = RequestMethod.GET)
-    public ResponseEntity<?> statistic(@ModelAttribute QueryTracesParam queryTracesParam,
-                                    @RequestParam(required = false) String type) {
-        // 参数校验
-        if (type == null || type.isEmpty()) {
-            return ResponseEntity.badRequest().body( "查询参数不能为空");
-        }
 
-        // 根据type参数调用不同的方法
-        TraceSearchTypeEnum searchType = TraceSearchTypeEnum.fromCode(type);
-        if (searchType == null) {
-            return ResponseEntity.badRequest().body("无效的搜索类型: " + type);
-        }
 
-        switch (searchType) {
-            case COUNT:
-                // 请求数时序统计
-                List<TimeBucketCountResult> countResult = esTraceService.getTraceCountByMinute(queryTracesParam);
-                return ResponseEntity.ok(countResult);
-
-            case STATUSCOUNT:
-                // 状态码分组统计
-                List<StatusTimeBucketResult> statusResult = esTraceService.getStatusCountByMinute(queryTracesParam);
-                return ResponseEntity.ok(statusResult);
-
-            case LATENCYSTATS:
-                // 延迟统计
-                List<LatencyTimeBucketResult> latencyResult = esTraceService.getLatencyStatsByMinute(queryTracesParam);
-                return ResponseEntity.ok(latencyResult);
-            default:
-                return ResponseEntity.badRequest().body("无效的搜索类型: " + type);
-        }
+    /**
+     * 按分钟统计请求个数，每秒XX个
+     * @param queryEdgeParam
+     * @return
+     */
+    @RequestMapping(value = "/kpi/qps", method = RequestMethod.GET)
+    public ResponseEntity<?> qpsByMinute(@ModelAttribute QueryEdgeParam queryEdgeParam ) {
+        List<TimeBucketResult> statusResult = esEdgeService.qpsByMinute(queryEdgeParam);
+        return ResponseEntity.ok(statusResult);
     }
 
+    /**
+     * 按分钟统计异常比例
+     * @param queryEdgeParam
+     * @return
+     */
+    @RequestMapping(value = "/kpi/errorRate", method = RequestMethod.GET)
+    public ResponseEntity<?> errorRateByMinute(@ModelAttribute  QueryEdgeParam queryEdgeParam) {
+        List<TimeBucketResult> statusResult = esEdgeService.errorRateByMinute(queryEdgeParam);
+        return ResponseEntity.ok(statusResult);
+    }
+
+    /**
+     * 按分钟统计响应时延
+     * @param queryEdgeParam
+     * @return
+     */
+    @RequestMapping(value = "/kpi/latencyStats", method = RequestMethod.GET)
+    public ResponseEntity<?> latencyStatsByMinute(@ModelAttribute  QueryEdgeParam queryEdgeParam) {
+        List<TimeBucketResult> statusResult = esEdgeService.latencyStatsByMinute(queryEdgeParam);
+        return ResponseEntity.ok(statusResult);
+    }
 
 
 
