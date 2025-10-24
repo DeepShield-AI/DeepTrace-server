@@ -2,41 +2,18 @@ package com.qcl.entity.param;
 
 import lombok.Data;
 
-import java.util.List;
 
+/**
+ * 路径分析查询参数
+ */
 @Data
-public class QueryEdgeParam {
-    private String traceId;
+public class QueryEdgeParam extends QueryTracesParam{
     /**
-     * 应用协议
+     * 源节点
      */
-    private List<String> protocol;
+    private Long srcNodeId;
     /**
-     * 响应状态
+     * 目标节点
      */
-    private List<String> status;
-
-    /**
-     * 最晚的开始时间，值为秒级时间戳
-     */
-    private Long startTime;
-
-    private String containerName;
-    /**
-     * 最低响应时间
-     */
-    private Long minE2eDuration;
-    /**
-     * 最高响应时间
-     */
-    private Long maxE2eDuration;
-
-    private Integer pageNo;
-    private Integer pageSize;
-
-    //排序字段
-    private String sortBy;
-
-    //desc asc
-    private String sortOrder;
+    private Long dstNodeId;
 }

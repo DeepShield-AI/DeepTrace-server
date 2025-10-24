@@ -2,7 +2,7 @@ package com.qcl.service;
 
 import com.qcl.entity.EndpointProtocolStatsResult;
 import com.qcl.entity.Nodes;
-import com.qcl.entity.param.QueryTracesParam;
+import com.qcl.entity.param.QueryNodeParam;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.entity.statistic.TimeBucketResult;
 import com.qcl.vo.PageResult;
@@ -11,15 +11,15 @@ import java.util.List;
 
 public interface EsNodesServices {
 
-    PageResult<Nodes> queryByPage(QueryTracesParam queryTracesParam);
+    PageResult<Nodes> queryByPage(QueryNodeParam queryNodeParam);
 
-    List<EndpointProtocolStatsResult> getEndpointProtocolStats(QueryTracesParam queryTracesParam);
+    List<EndpointProtocolStatsResult> getEndpointProtocolStats(QueryNodeParam queryNodeParam);
 
-    List<StatusTimeBucketResult> getStatusCountByMinute(QueryTracesParam queryTracesParam);
+    List<StatusTimeBucketResult> getStatusCountByMinute(QueryNodeParam queryNodeParam);
 
-    List<TimeBucketResult> qpsByMinute(QueryTracesParam queryTracesParam);
+    List<TimeBucketResult> qpsByMinute(QueryNodeParam queryNodeParam);
 
-    List<TimeBucketResult> errorRateByMinute(QueryTracesParam queryTracesParam);
+    List<TimeBucketResult> errorRateByMinute(QueryNodeParam queryNodeParam);
 
-    List<TimeBucketResult> latencyStatsByMinute(QueryTracesParam queryTracesParam);
+    List<TimeBucketResult> latencyStatsByMinute(QueryNodeParam queryNodeParam);
 }
