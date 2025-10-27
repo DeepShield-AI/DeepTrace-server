@@ -5,6 +5,7 @@ import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.entity.statistic.TimeBucketCountResult;
+import com.qcl.vo.PageResult;
 
 import java.util.List;
 import java.util.Map;
@@ -12,9 +13,9 @@ import java.util.Map;
 
 public interface EsTraceService {
     /**
-     * 深分页查询 Trace 列表
+     * 返回分页结果对象
      */
-    List<Traces> queryByPage(QueryTracesParam queryTracesParam);
+    PageResult<Traces> queryByPageResult(QueryTracesParam param);
     /**
      * 滚动查询 Trace 列表
      */

@@ -13,6 +13,7 @@ import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.entity.statistic.*;
 import com.qcl.service.EsTraceService;
+import com.qcl.vo.PageResult;
 import lombok.RequiredArgsConstructor;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
@@ -294,30 +295,31 @@ public class EsTraceServiceImpl implements EsTraceService {
         }
     }
 
-
-
-    // 分页查询
-    public List<Traces> queryByPage(QueryTracesParam queryTracesParam) {
+    /**
+     * 深分页查询
+     * @param param 查询参数
+     * @return 分页结果对象
+     */
+    @Override
+    public PageResult<Traces> queryByPageResult(QueryTracesParam param) {
         try {
-            Query finalQuery = buildQuery(queryTracesParam);
+            Query query = buildQuery(param);
+            int pageNum = param.getPageNum() != null ? param.getPageNum() : 0;
+            int pageSize = param.getPageSize() != null ? param.getPageSize() : 10;
+            int from = pageNum * pageSize;
 
-            // 4.构建动态排序条件
+            // 动态排序条件
             List<SortOptions> sortOptions = new ArrayList<>();
-
-            if (queryTracesParam.getSortBy() != null && !queryTracesParam.getSortBy().isEmpty()) {
-                SortOrder order =
-                        "desc".equalsIgnoreCase(queryTracesParam.getSortOrder()) ?
-                                SortOrder.Desc :
-                                SortOrder.Asc;
-
+            if (param.getSortBy() != null && !param.getSortBy().isEmpty()) {
+                SortOrder order = "desc".equalsIgnoreCase(param.getSortOrder()) ? SortOrder.Desc : SortOrder.Asc;
                 sortOptions.add(SortOptions.of(so -> so
                         .field(f -> f
-                                .field(queryTracesParam.getSortBy())
+                                .field(param.getSortBy())
                                 .order(order)
                         )
                 ));
             } else {
-                // 默认排序
+                // 默认按 start_time 降序排序
                 sortOptions.add(SortOptions.of(so -> so
                         .field(f -> f
                                 .field("start_time")
@@ -326,38 +328,28 @@ public class EsTraceServiceImpl implements EsTraceService {
                 ));
             }
 
-            //临时深分页 TODO
-            int pageNo = queryTracesParam.getPageNo() != null ? queryTracesParam.getPageNo() : 1;
-            int pageSize = queryTracesParam.getPageSize() != null ? queryTracesParam.getPageSize() : 10;
-            int from = (pageNo - 1) * pageSize;
-
-            // 5. 执行查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index("traces")
-                            .query(finalQuery)
+                            .query(query)
                             .from(from)
                             .size(pageSize)
-                            .sort(so -> so
-                                    .field(f -> f
-                                            .field("start_time")
-                                            .order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)
-                                    )
-                            )
-                            .size(50)
+                            .sort(sortOptions)
                             .source(src -> src
-                                    .filter(f -> f
-                                            .excludes("topology", "components","nodes","edges")
-                                    )
+                                            .filter(f -> f
+//                                            .excludes("topology", "components", "nodes", "edges")
+                                              .excludes("spans", "topology", "components", "nodes", "edges")
+                                            )
                             ),
                     Traces.class
             );
 
-            // 6. 提取结果
-            List<Traces> traces =  response.hits().hits().stream()
+            List<Traces> traces = response.hits().hits().stream()
                     .map(Hit::source)
                     .collect(Collectors.toList());
-            return traces;
+            long totalElements = response.hits().total() != null ? response.hits().total().value() : 0;
+            int totalPages = (int) Math.ceil((double) totalElements / pageSize);
 
+            return new PageResult<>(traces, pageNum, pageSize, totalElements, totalPages);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Error executing Elasticsearch query", e);
@@ -464,12 +456,12 @@ public class EsTraceServiceImpl implements EsTraceService {
             ));
         }
         // status 条件
-        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
+        if (queryTracesParam.getStatus() != null && !queryTracesParam.getStatus().isEmpty()) {
             mainMustConditions.add(Query.of(q -> q
                     .terms(t -> t
                             .field("status_code.keyword")
                             .terms(t2 -> t2.value(
-                                    queryTracesParam.getStatusCodes().stream()
+                                    queryTracesParam.getStatus().stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())
                             ))
@@ -526,7 +518,5 @@ public class EsTraceServiceImpl implements EsTraceService {
                 .bool(b -> b.must(mainMustConditions))
         );
     }
-
-
 
 }
