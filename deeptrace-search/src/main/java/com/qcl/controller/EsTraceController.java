@@ -6,6 +6,7 @@ import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.entity.statistic.TimeBucketCountResult;
+import com.qcl.vo.PageResult;
 import com.qcl.service.EsTraceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,13 +25,13 @@ public class EsTraceController {
 
     @Autowired
     private EsTraceService esTraceService;
-//    private com.qcl.service.EsTraceService esTraceService;
 
-
+    // 深分页查询
+    // 使用 @ModelAttribute 自动绑定查询参数
     @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
-    public ResponseEntity< List<Traces>> search(QueryTracesParam queryTracesParam) {
-        List<Traces> traces = esTraceService.queryByPage(queryTracesParam);
-        return ResponseEntity.ok(traces);
+    public ResponseEntity<PageResult<Traces>> search(@ModelAttribute QueryTracesParam param) {
+        PageResult<Traces> result = esTraceService.queryByPageResult(param);
+        return ResponseEntity.ok(result);
     }
 
     // 滚动查询
