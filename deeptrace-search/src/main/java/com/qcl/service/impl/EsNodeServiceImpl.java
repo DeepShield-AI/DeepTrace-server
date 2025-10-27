@@ -395,9 +395,9 @@ public class EsNodeServiceImpl implements EsNodeService {
             }
 
             //临时深分页 TODO
-            int pageNo = queryNodeParam.getPageNo() != null ? queryNodeParam.getPageNo() : 1;
+            int pageNum = queryNodeParam.getPageNum() != null ? queryNodeParam.getPageNum() : 1;
             int pageSize = queryNodeParam.getPageSize() != null ? queryNodeParam.getPageSize() : 2;
-            int from = (pageNo - 1) * pageSize;
+            int from = (pageNum - 1) * pageSize;
 
             // 5. 执行查询
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
@@ -422,7 +422,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             PageResult<Nodes> result = new PageResult<>(
                     nodes,
-                    pageNo,
+                    pageNum,
                    pageSize,
                     total
             );
