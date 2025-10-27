@@ -217,9 +217,9 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             }
 
             //临时深分页 TODO
-            int pageNo = queryEdgeParam.getPageNo() != null ? queryEdgeParam.getPageNo() : 1;
+            int pageNum = queryEdgeParam.getPageNum() != null ? queryEdgeParam.getPageNum() : 1;
             int pageSize = queryEdgeParam.getPageSize() != null ? queryEdgeParam.getPageSize() : 10;
-            int from = (pageNo - 1) * pageSize;
+            int from = (pageNum - 1) * pageSize;
 
             // 5. 执行查询
             SearchResponse<Edges> response = elasticsearchClient.search(s -> s
@@ -250,7 +250,7 @@ public class EsEdgesServiceImpl implements EsEdgeService {
 
             PageResult<Edges> result = new PageResult<>(
                     edges,
-                    pageNo,
+                    pageNum,
                    pageSize,
                     total
             );
