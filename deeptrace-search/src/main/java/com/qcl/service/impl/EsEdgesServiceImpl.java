@@ -217,7 +217,7 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             }
 
             //临时深分页 TODO
-            int pageNo = queryEdgeParam.getPageNo() != null ? queryEdgeParam.getPageNo() : 1;
+            int pageNo = queryEdgeParam.getPageNum() != null ? queryEdgeParam.getPageNum() : 1;
             int pageSize = queryEdgeParam.getPageSize() != null ? queryEdgeParam.getPageSize() : 10;
             int from = (pageNo - 1) * pageSize;
 
@@ -657,7 +657,10 @@ public class EsEdgesServiceImpl implements EsEdgeService {
 
                 for (DateHistogramBucket bucket :
                         dateHistogram.buckets().array()) {
-                    result.add(new TimeBucketResult(bucket.key(), bucket.docCount()/60));
+                    double qps = new BigDecimal(bucket.docCount())
+                            .divide(new BigDecimal(60), 2, RoundingMode.HALF_UP)
+                            .doubleValue();
+                    result.add(new TimeBucketResult(bucket.key(), qps));
                 }
             }
 

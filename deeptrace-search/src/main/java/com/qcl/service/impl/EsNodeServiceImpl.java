@@ -87,7 +87,10 @@ public class EsNodeServiceImpl implements EsNodeService {
 
                 for (DateHistogramBucket bucket :
                         dateHistogram.buckets().array()) {
-                    result.add(new TimeBucketResult(bucket.key(), bucket.docCount()/60));
+                    double qps = new BigDecimal(bucket.docCount())
+                            .divide(new BigDecimal(60), 2, RoundingMode.HALF_UP)
+                            .doubleValue();
+                    result.add(new TimeBucketResult(bucket.key(), qps));
                 }
             }
 
@@ -395,7 +398,7 @@ public class EsNodeServiceImpl implements EsNodeService {
             }
 
             //临时深分页 TODO
-            int pageNo = queryNodeParam.getPageNo() != null ? queryNodeParam.getPageNo() : 1;
+            int pageNo = queryNodeParam.getPageNum() != null ? queryNodeParam.getPageNum() : 1;
             int pageSize = queryNodeParam.getPageSize() != null ? queryNodeParam.getPageSize() : 2;
             int from = (pageNo - 1) * pageSize;
 

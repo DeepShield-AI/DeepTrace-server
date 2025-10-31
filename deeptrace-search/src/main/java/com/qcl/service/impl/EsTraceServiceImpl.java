@@ -456,12 +456,12 @@ public class EsTraceServiceImpl implements EsTraceService {
             ));
         }
         // status 条件
-        if (queryTracesParam.getStatus() != null && !queryTracesParam.getStatus().isEmpty()) {
+        if (queryTracesParam.getStatusCodes() != null && !queryTracesParam.getStatusCodes().isEmpty()) {
             mainMustConditions.add(Query.of(q -> q
                     .terms(t -> t
                             .field("status_code.keyword")
                             .terms(t2 -> t2.value(
-                                    queryTracesParam.getStatus().stream()
+                                    queryTracesParam.getStatusCodes().stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())
                             ))

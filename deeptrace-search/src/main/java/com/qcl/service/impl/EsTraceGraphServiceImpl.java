@@ -69,7 +69,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             Query query = buildQueryToNode(queryTracesParam);
 
             // 计算时间窗口（秒）
-            Long timeWindow = queryTracesParam.getEndTime() - queryTracesParam.getStartTime();
+            Long timeWindow = (queryTracesParam.getEndTime() - queryTracesParam.getStartTime())/1000;
 
             // 2. 构建聚合查询
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
@@ -346,7 +346,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             Query query = buildQueryToEdge(queryTracesParam);
 
             // 计算时间窗口（秒）
-            Long timeWindow = queryTracesParam.getEndTime() - queryTracesParam.getStartTime();
+            Long timeWindow = (queryTracesParam.getEndTime() - queryTracesParam.getStartTime())/1000;
 
             // 2. 构建聚合查询
             SearchResponse<Edges> response = elasticsearchClient.search(s -> s
