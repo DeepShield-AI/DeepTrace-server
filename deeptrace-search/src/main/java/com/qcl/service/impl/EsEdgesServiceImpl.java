@@ -251,7 +251,7 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             PageResult<Edges> result = new PageResult<>(
                     edges,
                     pageNum,
-                   pageSize,
+                    pageSize,
                     total
             );
             return result;
