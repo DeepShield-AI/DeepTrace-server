@@ -298,7 +298,7 @@ public class EsTraceServiceImpl implements EsTraceService {
     /**
      * 深分页查询
      * @param param 查询参数
-     * @return 分页结果对象
+     * @return 分页结果对象，包含 Trace 列表和所有筛选项（endpoint、protocol、status_code）
      */
     @Override
     public PageResult<Traces> queryByPageResult(QueryTracesParam param) {
@@ -349,15 +349,50 @@ public class EsTraceServiceImpl implements EsTraceService {
             long totalElements = response.hits().total() != null ? response.hits().total().value() : 0;
             int totalPages = (int) Math.ceil((double) totalElements / pageSize);
 
-            return new PageResult<>(traces, pageNum, pageSize, totalElements, totalPages);
+//            return new PageResult<>(traces, pageNum, pageSize, totalElements, totalPages);
+            // 查询所有筛选项
+            List<String> allEndpoints = getAllDistinctValues("endpoint.keyword");
+            List<String> allProtocols = getAllDistinctValues("protocol.keyword");
+            List<String> allStatusOptions = getAllDistinctValues("status_code.keyword");
+
+            PageResult<Traces> pageResult = new PageResult<>(traces, pageNum, pageSize, totalElements, totalPages);
+            pageResult.setAllEndpoints(allEndpoints);
+            pageResult.setAllProtocols(allProtocols);
+            pageResult.setAllStatusOptions(allStatusOptions);
+            return pageResult;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Error executing Elasticsearch query", e);
         }
     }
 
+    /**
+     * 查询ES某字段所有去重值
+     */
+    private List<String> getAllDistinctValues(String field) {
+        try {
+            SearchResponse<Traces> response = elasticsearchClient.search(s -> s
+                            .index("traces")
+                            .size(0)
+                            .aggregations("distinct", a -> a.terms(t -> t.field(field).size(1000))),
+                    Traces.class
+            );
+            List<String> result = new ArrayList<>();
+            if (response.aggregations() != null && response.aggregations().containsKey("distinct")) {
+                StringTermsAggregate agg = response.aggregations().get("distinct").sterms();
+                for (StringTermsBucket bucket : agg.buckets().array()) {
+                    result.add(bucket.key().stringValue());
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
 
-    // 滚动查询
+    /**
+     * 滚动查询
+     */
     public Map<String, Object> scrollQuery(QueryTracesParam param, String scrollId, Integer pageSize) {
         try {
             Map<String, Object> result = new java.util.HashMap<>();
