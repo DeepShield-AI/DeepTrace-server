@@ -390,7 +390,9 @@ public class EsTraceServiceImpl implements EsTraceService {
         }
     }
 
-    // 滚动查询
+    /**
+     * 滚动查询
+     */
     public Map<String, Object> scrollQuery(QueryTracesParam param, String scrollId, Integer pageSize) {
         try {
             Map<String, Object> result = new java.util.HashMap<>();

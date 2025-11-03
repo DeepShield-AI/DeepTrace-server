@@ -44,6 +44,7 @@ public class EsTraceController {
     }
 
     @RequestMapping(value = "/statistic", method = RequestMethod.GET)
+    // 使用 @ModelAttribute 自动绑定查询参数（内置Apifox不显示？
     public ResponseEntity<?> statistic(@ModelAttribute QueryTracesParam queryTracesParam,
                                     @RequestParam(required = false) String type) {
         // 参数校验
