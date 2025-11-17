@@ -2,12 +2,20 @@ package com.qcl.vo;
 
 import java.util.List;
 
+/**
+ * 通用分页结果对象
+ * @param <T> 分页内容类型
+ */
 public class PageResult<T> {
     private List<T> content;
     private int pageNumber;
     private int pageSize;
     private long totalElements;
     private int totalPages;
+    // 所有筛选项
+    private List<String> allEndpoints;
+    private List<String> allProtocols;
+    private List<String> allStatusOptions;
 
     public PageResult(List<T> content, int pageNumber, int pageSize, long totalElements, int totalPages) {
         this.content = content;
@@ -41,4 +49,11 @@ public class PageResult<T> {
     public void setTotalElements(long totalElements) { this.totalElements = totalElements; }
     public int getTotalPages() { return totalPages; }
     public void setTotalPages(int totalPages) { this.totalPages = totalPages; }
+    // 所有筛选项的 getter和setter
+    public List<String> getAllEndpoints() { return allEndpoints; }
+    public void setAllEndpoints(List<String> allEndpoints) { this.allEndpoints = allEndpoints; }
+    public List<String> getAllProtocols() { return allProtocols; }
+    public void setAllProtocols(List<String> allProtocols) { this.allProtocols = allProtocols; }
+    public List<String> getAllStatusOptions() { return allStatusOptions; }
+    public void setAllStatusOptions(List<String> allStatusOptions) { this.allStatusOptions = allStatusOptions; }
 }
