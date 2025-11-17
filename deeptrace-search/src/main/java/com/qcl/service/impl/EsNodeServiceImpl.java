@@ -409,6 +409,12 @@ public class EsNodeServiceImpl implements EsNodeService {
                             .from(from)
                             .size(pageSize)
                             .sort(sortOptions)
+                            .source(src -> src
+                                    .filter(f -> f
+                                            //k8s_tag目前没有数据，因此暂不在前端页面展示
+                                            .excludes("tag.k8s_tag")
+                                    )
+                            )
                             ,
                     Nodes.class
             );
