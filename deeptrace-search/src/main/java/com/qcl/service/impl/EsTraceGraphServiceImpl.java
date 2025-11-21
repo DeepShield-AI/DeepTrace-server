@@ -73,7 +73,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
 
             // 2. 构建聚合查询
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes")
+                            .index("nodes") //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("node_metrics", a -> a
@@ -350,7 +350,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
 
             // 2. 构建聚合查询
             SearchResponse<Edges> response = elasticsearchClient.search(s -> s
-                            .index("edges")
+                            .index("edges") //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("node_metrics", a -> a
@@ -585,7 +585,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             Long timeWindow = (System.currentTimeMillis() - queryTracesParam.getStartTime()) / 1000;
             // 2. 构建聚合查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces")
+                            .index("traces") //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("group_by_container", a -> a

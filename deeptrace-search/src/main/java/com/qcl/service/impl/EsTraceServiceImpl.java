@@ -44,7 +44,7 @@ public class EsTraceServiceImpl implements EsTraceService {
 
             // 2. 构建聚合查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces")
+                            .index("traces") //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -92,7 +92,7 @@ public class EsTraceServiceImpl implements EsTraceService {
 
             // 2. 构建嵌套聚合查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces")
+                            .index("traces") //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("status_groups", a -> a
@@ -159,7 +159,7 @@ public class EsTraceServiceImpl implements EsTraceService {
 
             // 2. 构建聚合查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces")
+                            .index("traces") //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -329,7 +329,7 @@ public class EsTraceServiceImpl implements EsTraceService {
             }
 
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces")
+                            .index("traces") //todo??? 数据与用户绑定
                             .query(query)
                             .from(from)
                             .size(pageSize)
@@ -372,7 +372,7 @@ public class EsTraceServiceImpl implements EsTraceService {
     private List<String> getAllDistinctValues(String field) {
         try {
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces")
+                            .index("traces") //todo??? 数据与用户绑定
                             .size(0)
                             .aggregations("distinct", a -> a.terms(t -> t.field(field).size(1000))),
                     Traces.class
@@ -401,7 +401,7 @@ public class EsTraceServiceImpl implements EsTraceService {
                 // 首次滚动查询
                 Query query = buildQuery(param);
                 SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                                .index("traces")
+                                .index("traces") //todo??? 数据与用户绑定
                                 .query(query)
                                 .size(pageSize != null ? pageSize : 10)
                                 .scroll(t -> t.time("2m"))

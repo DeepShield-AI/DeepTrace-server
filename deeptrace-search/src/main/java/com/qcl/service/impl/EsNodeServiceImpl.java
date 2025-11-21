@@ -63,7 +63,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 2. 构建聚合查询
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes")
+                            .index("nodes") //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -126,7 +126,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 2. 构建聚合查询
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes")
+                            .index("nodes") //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -219,7 +219,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 2. 构建聚合查询
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes")
+                            .index("nodes")  //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -293,7 +293,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 2. 构建嵌套聚合查询
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes")
+                            .index("nodes") //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("status_groups", a -> a
@@ -404,7 +404,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 5. 执行查询
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes")
+                            .index("nodes") //todo??? 数据与用户绑定
                             .query(finalQuery)
                             .from(from)
                             .size(pageSize)
@@ -474,7 +474,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 2. 构建聚合查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("nodes")
+                            .index("nodes") //todo??? 数据与用户绑定
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("group_by_endpoint_protocol", a -> a
