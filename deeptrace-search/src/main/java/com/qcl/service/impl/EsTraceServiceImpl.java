@@ -14,7 +14,10 @@ import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.entity.statistic.*;
 import com.qcl.service.EsTraceService;
 import com.qcl.vo.PageResult;
+import com.qcl.utils.EsAggregationHelper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
 
@@ -31,13 +34,15 @@ public class EsTraceServiceImpl implements EsTraceService {
     private final ElasticsearchClient elasticsearchClient;
     // 添加 ObjectMapper 用于序列化查询
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private static final Logger logger = LoggerFactory.getLogger(EsTraceServiceImpl.class);
+    private final EsAggregationHelper esAggregationHelper;
 
 
     /**
      * 请求数时序统计
      * @param queryTracesParam 筛选条件
      */
-    public List<TimeBucketCountResult> getTraceCountByMinute(QueryTracesParam queryTracesParam) {
+    public List<TimeBucketResult> getTraceCountByMinute(QueryTracesParam queryTracesParam) {
         try {
             // 1. 构建查询条件
             Query query = buildQuery(queryTracesParam);
@@ -60,7 +65,7 @@ public class EsTraceServiceImpl implements EsTraceService {
             );
 
             // 3. 解析聚合结果
-            List<TimeBucketCountResult> result = new ArrayList<>();
+            List<TimeBucketResult> result = new ArrayList<>();
 
             if (response.aggregations() != null && response.aggregations().containsKey("per_minute")) {
                 DateHistogramAggregate dateHistogram =
@@ -68,7 +73,7 @@ public class EsTraceServiceImpl implements EsTraceService {
 
                 for (DateHistogramBucket bucket :
                         dateHistogram.buckets().array()) {
-                    result.add(new TimeBucketCountResult(bucket.key(), bucket.docCount()));
+                    result.add(new TimeBucketResult(bucket.key(), bucket.docCount()));
                 }
             }
 
@@ -123,7 +128,7 @@ public class EsTraceServiceImpl implements EsTraceService {
                         statusGroups.buckets().array()) {
 
                     String statusCode = bucket.key().stringValue();
-                    List<TimeBucketCountResult> timeBuckets = new ArrayList<>();
+                    List<TimeBucketResult> timeBuckets = new ArrayList<>();
 
                     // 解析时间桶数据
                     if (bucket.aggregations() != null && bucket.aggregations().containsKey("per_minute")) {
@@ -131,7 +136,7 @@ public class EsTraceServiceImpl implements EsTraceService {
                                 bucket.aggregations().get("per_minute").dateHistogram();
 
                         for (DateHistogramBucket timeBucket : dateHistogram.buckets().array()) {
-                            timeBuckets.add(new TimeBucketCountResult(timeBucket.key(), timeBucket.docCount()));
+                            timeBuckets.add(new TimeBucketResult(timeBucket.key(), timeBucket.docCount()));
                         }
                     }
 
@@ -296,49 +301,82 @@ public class EsTraceServiceImpl implements EsTraceService {
     }
 
     /**
-     * 深分页查询
-     * @param param 查询参数
+     * 分页查询
+     * @param queryTracesParam  查询参数
      * @return 分页结果对象，包含 Trace 列表和所有筛选项（endpoint、protocol、status_code）
      */
     @Override
-    public PageResult<Traces> queryByPageResult(QueryTracesParam param) {
+    public PageResult<Traces> queryByPageResult(QueryTracesParam queryTracesParam ) {
         try {
-            Query query = buildQuery(param);
-            int pageNum = param.getPageNum() != null ? param.getPageNum() : 0;
-            int pageSize = param.getPageSize() != null ? param.getPageSize() : 10;
-            int from = pageNum * pageSize;
+            // 1. 构建查询条件
+            Query finalQuery = buildQuery(queryTracesParam);
 
-            // 动态排序条件
-            List<SortOptions> sortOptions = new ArrayList<>();
-            if (param.getSortBy() != null && !param.getSortBy().isEmpty()) {
-                SortOrder order = "desc".equalsIgnoreCase(param.getSortOrder()) ? SortOrder.Desc : SortOrder.Asc;
-                sortOptions.add(SortOptions.of(so -> so
-                        .field(f -> f
-                                .field(param.getSortBy())
-                                .order(order)
-                        )
-                ));
-            } else {
-                // 默认按 start_time 降序排序
-                sortOptions.add(SortOptions.of(so -> so
-                        .field(f -> f
-                                .field("start_time")
-                                .order(SortOrder.Desc)
-                        )
-                ));
-            }
+            // 2.处理分页参数
+            int pageNum = queryTracesParam.getPageNum() != null ? queryTracesParam.getPageNum() : 0;
+            int pageSize = queryTracesParam.getPageSize() != null ? queryTracesParam.getPageSize() : 10;
+            int from = pageNum * pageSize;   // 默认从0开始
 
+            // 2.执行查询
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index("traces") //todo??? 数据与用户绑定
-                            .query(query)
+                            .query(finalQuery)
                             .from(from)
-                            .size(pageSize)
-                            .sort(sortOptions)
+                            .size(pageSize)  // 使用动态pageSize而非硬编码50
+                            .sort(so -> so
+                                    .field(f -> f
+                                            .field("start_time")
+                                            .order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)
+                                    )
+                            )
                             .source(src -> src
                                             .filter(f -> f
 //                                            .excludes("topology", "components", "nodes", "edges")
-                                              .excludes("spans", "topology", "components", "nodes", "edges")
+                                            .excludes("spans", "topology", "components", "nodes", "edges")
                                             )
+                            ),
+                    Traces.class
+            );
+
+            // 3.提取结果
+            List<Traces> traces = response.hits().hits().stream()
+                    .map(Hit::source)
+                    .collect(Collectors.toList());
+            long totalElements = response.hits().total() != null ? response.hits().total().value() : 0;
+            int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+
+            return new PageResult<>(traces, pageNum, pageSize, totalElements, totalPages);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error executing Elasticsearch query", e);
+        }
+    }
+
+//    public PageResult<Traces> traceDetailResult(QueryTracesParam param) {
+//        return null;
+//    }
+//
+//    public Map<String, List<String>> getAllFilterOptions() {
+//        return Map.of();
+//    }
+
+    /**
+     * 单条Trace详情查询
+     * @param queryTracesParam 查询参数，必须包含 traceId
+     * @return 分页结果对象，包含单个 Trace 详情
+     */
+    public PageResult<Traces> traceDetailResult(QueryTracesParam queryTracesParam) {
+        try {
+            Query finalQuery = buildQuery(queryTracesParam);
+
+            // 只查一条Trace详情
+            SearchResponse<Traces> response = elasticsearchClient.search(s -> s
+                            .index("traces")
+                            .query(finalQuery)
+                            .size(1)
+                            .source(src -> src
+                                    .filter(f -> f
+                                            .excludes("topology", "components", "nodes", "edges")
+                                    )
                             ),
                     Traces.class
             );
@@ -346,20 +384,10 @@ public class EsTraceServiceImpl implements EsTraceService {
             List<Traces> traces = response.hits().hits().stream()
                     .map(Hit::source)
                     .collect(Collectors.toList());
-            long totalElements = response.hits().total() != null ? response.hits().total().value() : 0;
-            int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+            long totalElements = traces.size();
+            int totalPages = 1;
 
-//            return new PageResult<>(traces, pageNum, pageSize, totalElements, totalPages);
-            // 查询所有筛选项
-            List<String> allEndpoints = getAllDistinctValues("endpoint.keyword");
-            List<String> allProtocols = getAllDistinctValues("protocol.keyword");
-            List<String> allStatusOptions = getAllDistinctValues("status_code.keyword");
-
-            PageResult<Traces> pageResult = new PageResult<>(traces, pageNum, pageSize, totalElements, totalPages);
-            pageResult.setAllEndpoints(allEndpoints);
-            pageResult.setAllProtocols(allProtocols);
-            pageResult.setAllStatusOptions(allStatusOptions);
-            return pageResult;
+            return new PageResult<>(traces, 0, 1, totalElements, totalPages);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Error executing Elasticsearch query", e);
@@ -367,27 +395,26 @@ public class EsTraceServiceImpl implements EsTraceService {
     }
 
     /**
-     * 查询ES某字段所有去重值
+     * 获取所有可用的筛选项
      */
-    private List<String> getAllDistinctValues(String field) {
+    @Override
+    public Map<String, List<String>> getAllFilterOptions() {
+        Map<String, List<String>> result = new java.util.HashMap<>();
         try {
-            SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces") //todo??? 数据与用户绑定
-                            .size(0)
-                            .aggregations("distinct", a -> a.terms(t -> t.field(field).size(1000))),
-                    Traces.class
-            );
-            List<String> result = new ArrayList<>();
-            if (response.aggregations() != null && response.aggregations().containsKey("distinct")) {
-                StringTermsAggregate agg = response.aggregations().get("distinct").sterms();
-                for (StringTermsBucket bucket : agg.buckets().array()) {
-                    result.add(bucket.key().stringValue());
-                }
-            }
-            return result;
+            List<String> allEndpoints = esAggregationHelper.getDistinctTerms("traces", "endpoint.keyword");
+            List<String> allProtocols = esAggregationHelper.getDistinctTerms("traces", "protocol.keyword");
+            List<String> allStatusOptions = esAggregationHelper.getDistinctTerms("traces", "status_code.keyword");
+
+            result.put("allEndpoints", allEndpoints != null ? allEndpoints : new ArrayList<>());
+            result.put("allProtocols", allProtocols != null ? allProtocols : new ArrayList<>());
+            result.put("allStatusOptions", allStatusOptions != null ? allStatusOptions : new ArrayList<>());
         } catch (Exception e) {
-            return new ArrayList<>();
+            logger.error("Error while fetching filter options using EsAggregationHelper", e);
+            result.put("allEndpoints", new ArrayList<>());
+            result.put("allProtocols", new ArrayList<>());
+            result.put("allStatusOptions", new ArrayList<>());
         }
+        return result;
     }
 
     /**
@@ -544,6 +571,20 @@ public class EsTraceServiceImpl implements EsTraceService {
                                     .field("start_time")
                                     .gte(queryTracesParam.getStartTime().toString())
                             )
+                    )
+            ));
+        }
+
+        // endpoints 条件（支持多选）
+        if (queryTracesParam.getEndpoints() != null && !queryTracesParam.getEndpoints().isEmpty()) {
+            mainMustConditions.add(Query.of(q -> q
+                    .terms(t -> t
+                            .field("endpoint.keyword")
+                            .terms(t2 -> t2.value(
+                                    queryTracesParam.getEndpoints().stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())
+                            ))
                     )
             ));
         }

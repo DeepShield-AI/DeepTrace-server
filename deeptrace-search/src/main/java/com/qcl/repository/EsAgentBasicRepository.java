@@ -9,6 +9,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface EsAgentBasicRepository extends ElasticsearchRepository<AgentBasic, String> {
-    // 根据 name 查询，返回一个分页结果（命名规范：findBy字段名Containing）
+    // 根据 name 查询，返回一个分页结果（spring-boot-starter-data-elasticsearch 命名规范：findBy+字段名+Containing）
     Page<AgentBasic> findByNameContaining(String keyword, Pageable pageable);
 }
