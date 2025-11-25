@@ -324,7 +324,7 @@ public class EsNodeServiceImpl implements EsNodeService {
                         statusGroups.buckets().array()) {
 
                     String statusCode = bucket.key().stringValue();
-                    List<TimeBucketCountResult> timeBuckets = new ArrayList<>();
+                    List<TimeBucketResult> timeBuckets = new ArrayList<>();
 
                     // 解析时间桶数据
                     if (bucket.aggregations() != null && bucket.aggregations().containsKey("per_minute")) {
@@ -332,7 +332,7 @@ public class EsNodeServiceImpl implements EsNodeService {
                                 bucket.aggregations().get("per_minute").dateHistogram();
 
                         for (DateHistogramBucket timeBucket : dateHistogram.buckets().array()) {
-                            timeBuckets.add(new TimeBucketCountResult(timeBucket.key(), timeBucket.docCount()));
+                            timeBuckets.add(new TimeBucketResult(timeBucket.key(), timeBucket.docCount()));
                         }
                     }
 
@@ -432,7 +432,7 @@ public class EsNodeServiceImpl implements EsNodeService {
             PageResult<Nodes> result = new PageResult<>(
                     nodes,
                     pageNo,
-                   pageSize,
+                    pageSize,
                     total
             );
             return result;

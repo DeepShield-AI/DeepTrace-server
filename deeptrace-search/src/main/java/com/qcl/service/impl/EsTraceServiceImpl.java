@@ -141,6 +141,7 @@ public class EsTraceServiceImpl implements EsTraceService {
                     }
 
                     result.add(new StatusTimeBucketResult(statusCode, timeBuckets));
+//                    result.add(new TimeBucketCountResult(statusCode, timeBuckets));
                 }
             }
 
