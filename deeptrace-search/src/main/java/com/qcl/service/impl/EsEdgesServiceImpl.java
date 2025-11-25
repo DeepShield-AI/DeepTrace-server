@@ -248,11 +248,15 @@ public class EsEdgesServiceImpl implements EsEdgeService {
                     .map(totalHits -> totalHits.value())
                     .orElse(0L);
 
+            // 计算总页数（补充缺失的 totalPages 参数）
+            int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / pageSize);
+
             PageResult<Edges> result = new PageResult<>(
                     edges,
                     pageNo,
                     pageSize,
-                    total
+                    total,
+                    totalPages
             );
             return result;
 
@@ -320,7 +324,8 @@ public class EsEdgesServiceImpl implements EsEdgeService {
                         statusGroups.buckets().array()) {
 
                     String statusCode = bucket.key().stringValue();
-                    List<TimeBucketCountResult> timeBuckets = new ArrayList<>();
+//                    List<TimeBucketCountResult> timeBuckets = new ArrayList<>();
+                    List<TimeBucketResult> timeBuckets = new ArrayList<>();
 
                     // 解析时间桶数据
                     if (bucket.aggregations() != null && bucket.aggregations().containsKey("per_minute")) {
@@ -328,7 +333,7 @@ public class EsEdgesServiceImpl implements EsEdgeService {
                                 bucket.aggregations().get("per_minute").dateHistogram();
 
                         for (DateHistogramBucket timeBucket : dateHistogram.buckets().array()) {
-                            timeBuckets.add(new TimeBucketCountResult(timeBucket.key(), timeBucket.docCount()));
+                            timeBuckets.add(new TimeBucketResult(timeBucket.key(), timeBucket.docCount()));
                         }
                     }
 
