@@ -61,7 +61,7 @@ mkdir DeepTrace_Project
 cd DeepTrace_Project
 ```
 
-### 2. 拉取最新源码
+### 2. 拉取最新项目源码
 
 ```sh
 git clone --single-branch --branch main https://github.com/DeepShield-AI/DeepTrace-server.git
