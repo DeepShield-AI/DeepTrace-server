@@ -1,8 +1,9 @@
 package com.qcl.service;
 
+import com.qcl.vo.Result;
 import org.springframework.http.ResponseEntity;
 
 public interface AgentService {
 
-    ResponseEntity<String> forwardGet(String param);
+    Result<String> forwardGet(String param);
 }

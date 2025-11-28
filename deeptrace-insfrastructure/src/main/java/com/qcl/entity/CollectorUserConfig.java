@@ -12,7 +12,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 采集器配置表（用户添加）(CollectorUserConfig)实体类
+ * 采集器配置表（用户在web添加的配置）(CollectorUserConfig)实体类
  */
 @Setter
 @Getter

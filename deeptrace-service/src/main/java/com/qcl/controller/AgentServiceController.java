@@ -1,6 +1,7 @@
 package com.qcl.controller;
 
 import com.qcl.service.AgentService;
+import com.qcl.vo.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -15,7 +16,7 @@ public class AgentServiceController {
     private AgentService agentService;
 
     @RequestMapping(value = "/get", method = RequestMethod.GET)
-    ResponseEntity<String> forwardGet(String param){
+    Result<String> forwardGet(String param){
         return agentService.forwardGet(param);
     }
 }

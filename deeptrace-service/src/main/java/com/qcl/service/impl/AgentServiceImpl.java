@@ -3,6 +3,7 @@ package com.qcl.service.impl;
 import com.qcl.service.AgentService;
 import com.qcl.utils.Constants;
 import com.qcl.utils.OkHttpUtil;
+import com.qcl.vo.Result;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +39,7 @@ public class AgentServiceImpl implements AgentService {
         }
     }
 
-    public ResponseEntity<String> forwardGet(String param) {
+    public Result<String> forwardGet(String param) {
         String url = Constants.AGENT_ADDRESS + "/api/native-agent";
         url="https://www.cnblogs.com/wuyongyin/p/16468864.html";
 
@@ -50,14 +51,14 @@ public class AgentServiceImpl implements AgentService {
             );
 
             if (response.isSuccessful()) {
-                return ResponseEntity.ok(Constants.SUCCESS);
+                return Result.success();
             }else{
-                return ResponseEntity.status(response.code()).body(response.message());
+                return Result.error(response.code(), response.message());
             }
         } catch (IOException e) {
             //e.printStackTrace()
             log.error(e.getMessage());
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return Result.error("Error: " + e.getMessage());
         }
     }
 
