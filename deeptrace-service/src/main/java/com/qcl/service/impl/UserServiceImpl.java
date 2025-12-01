@@ -1,5 +1,7 @@
 package com.qcl.service.impl;
 
+import com.qcl.constants.UserRoleEnum;
+import com.qcl.constants.UserStatusEnum;
 import com.qcl.entity.User;
 import com.qcl.dao.UserDao;
 import com.qcl.entity.param.UserParam;
@@ -41,7 +43,8 @@ public class UserServiceImpl implements UserService {
         BeanUtils.copyProperties(userParam, user);
         user.setCreateTime(new Date());
         user.setUpdateTime(new Date());
-        user.setStatus(1);
+        user.setStatus(UserStatusEnum.ENABLED.getCode());
+        user.setRole(UserRoleEnum.USER.getCode());
         //查询是否有相同用户名的用户
         if (userDao.queryByName(userParam.getUsername()) != null) {
             throw new RuntimeException("该用户已经存在");
