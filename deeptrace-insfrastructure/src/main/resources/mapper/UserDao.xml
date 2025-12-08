@@ -187,6 +187,15 @@ login_time = values(login_time)
         where user_id = #{userId}
     </update>
 
+    <!--更新用户登录时间-->
+    <update id="updateLoginTime">
+        UPDATE user
+        SET login_time =NOW(),
+            update_time = NOW()
+        WHERE username = #{username}
+    </update>
+
+
     <!--通过主键删除-->
     <delete id="deleteById">
         delete from user where user_id = #{userId}

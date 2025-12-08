@@ -1,9 +1,11 @@
 package com.qcl.controller;
 
 import com.qcl.entity.User;
+import com.qcl.entity.param.UserLoginParam;
 import com.qcl.entity.param.UserParam;
 import com.qcl.service.UserService;
-import com.qcl.vo.Result;
+import com.qcl.api.Result;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -11,9 +13,11 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * 用户个人表(User)表控制层
+ * 用户管理控制层
  *
  * @author makejava
  * @since 2025-11-27 14:42:56
@@ -21,6 +25,9 @@ import javax.annotation.Resource;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
+    @Value("${jwt.tokenHead}")
+    private String tokenHead;
+
     /**
      * 服务对象
      */
@@ -48,6 +55,18 @@ public class UserController {
         return Result.success(user);
     }
 
+    @RequestMapping(value = "/login", method = RequestMethod.POST)
+    @ResponseBody
+    public Result login(@Validated @RequestBody UserLoginParam param) {
+        String token = userService.login(param.getUsername(), param.getPassword());
+        if (token == null) {
+            return Result.error("用户名或密码错误");
+        }
+        Map<String, String> tokenMap = new HashMap<>();
+        tokenMap.put("token", token);
+        tokenMap.put("tokenHead", tokenHead);
+        return Result.success(tokenMap);
+    }
     /**
      * 分页查询
      *

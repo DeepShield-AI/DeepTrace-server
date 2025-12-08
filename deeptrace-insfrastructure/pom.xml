@@ -31,6 +31,14 @@
             <artifactId>hibernate-validator</artifactId>
             <version>7.0.5.Final</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.encryption</groupId>
+            <artifactId>deeptrace-common</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+
     </dependencies>
 
     <build>

@@ -9,7 +9,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>start</artifactId>
+    <artifactId>deeptrace-common</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -17,20 +17,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>com.encryption</groupId>
-            <artifactId>deeptrace-service</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.encryption</groupId>
-            <artifactId>deeptrace-common</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
 
-
-
-    </dependencies>
 
 </project>

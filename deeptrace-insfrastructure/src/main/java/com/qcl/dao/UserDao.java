@@ -80,6 +80,14 @@ public interface UserDao {
     int update(User user);
 
     /**
+     * 更新用户登录时间
+     * @param username 用户ID
+     * @return 更新记录数
+     */
+    int updateLoginTime(@Param("username") String username);
+
+
+    /**
      * 通过主键删除数据
      *
      * @param userId 主键

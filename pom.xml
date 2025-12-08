@@ -21,6 +21,7 @@
         <module>deeptrace-insfrastructure</module>
         <module>deeptrace-service</module>
         <module>start</module>
+        <module>deeptrace-common</module>
     </modules>
 
     <properties>

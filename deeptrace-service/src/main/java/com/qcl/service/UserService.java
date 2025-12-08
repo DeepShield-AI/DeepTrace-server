@@ -2,6 +2,7 @@ package com.qcl.service;
 
 import com.qcl.entity.User;
 import com.qcl.entity.param.UserParam;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
@@ -20,6 +21,8 @@ public interface UserService {
      * @return 实例对象
      */
     User queryById(Long userId);
+
+    User queryByUsername(String username);
 
     /**
      * 分页查询
@@ -60,4 +63,12 @@ public interface UserService {
      * @return
      */
     User register(UserParam userParam);
+
+    /**
+     * 登录功能
+     * @param username 用户名
+     * @param password 密码
+     * @return 生成的JWT的token
+     */
+    String login(@NotEmpty String username, @NotEmpty String password);
 }

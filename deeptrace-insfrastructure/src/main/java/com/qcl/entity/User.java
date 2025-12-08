@@ -1,7 +1,13 @@
 package com.qcl.entity;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.io.Serializable;
+import java.util.stream.Collectors;
 
 /**
  * 用户个人表(User)实体类
@@ -144,6 +150,12 @@ public class User implements Serializable {
 
     public void setLoginTime(Date loginTime) {
         this.loginTime = loginTime;
+    }
+
+    //用户的所有权限，设置为固定值ROLE_+当前用户角色（USER ADMIN）
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // 根据用户角色返回相应的权限
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.role.toUpperCase()));
     }
 
 }

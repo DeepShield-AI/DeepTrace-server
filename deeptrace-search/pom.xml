@@ -26,6 +26,14 @@
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-elasticsearch</artifactId>
         </dependency>
+
+
+        <dependency>
+            <groupId>com.encryption</groupId>
+            <artifactId>deeptrace-common</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
     <build>

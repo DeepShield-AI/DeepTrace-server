@@ -1,15 +1,18 @@
 package com.qcl.service.impl;
 
+import com.qcl.entity.param.AgentRegisterParam;
 import com.qcl.service.AgentService;
 import com.qcl.utils.Constants;
 import com.qcl.utils.OkHttpUtil;
-import com.qcl.vo.Result;
+import com.qcl.api.Result;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -62,6 +65,26 @@ public class AgentServiceImpl implements AgentService {
         }
     }
 
+    public String registerAgent(AgentRegisterParam param) {
+        String url = "http://127.0.0.1:59002/register_agent";
+
+        // 将实体参数转换为Map
+        Map<String, String> paramMap = new HashMap<>();
+        paramMap.put("host_ip", param.getHostIp());
+        paramMap.put("user_name", param.getUserName());
+        paramMap.put("host_password", param.getHostPassword());
+        paramMap.put("user_id", param.getUserId());
+        paramMap.put("ssh_port", String.valueOf(param.getSshPort()));
+        paramMap.put("agent_name", param.getAgentName());
+
+        // 使用HttpClientUtil发送POST请求
+        try {
+            return OkHttpUtil.postForm(url, paramMap);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
 
 
 }
