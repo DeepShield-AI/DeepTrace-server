@@ -1,16 +1,19 @@
 package com.qcl.entity.param;
 
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 public class AgentRegisterParam {
-    @NotEmpty
+    @NotEmpty(message = "IP不能为空")
     private String hostIp;
 
-    @NotEmpty
+    @NotEmpty(message = "密码不能为空")
     private String hostPassword;
-    @NotEmpty
+
+    @NotNull(message = "SSH端口不能为空")
     private Integer sshPort;
-    @NotEmpty
+
+    @NotEmpty(message = "名称不能为空")
     private String agentName;
 
     private String userName;

@@ -8,6 +8,7 @@ import com.qcl.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -28,7 +29,7 @@ public class AgentController {
     }
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
-    public Result<String> registerAgent(@RequestBody AgentRegisterParam param, Principal principal) {
+    public Result<String> registerAgent(@Validated  @RequestBody AgentRegisterParam param, Principal principal) {
         try {
             String userName = principal.getName();
             if (userName == null){
@@ -54,7 +55,7 @@ public class AgentController {
 
 
     @RequestMapping(value = "/enable", method = RequestMethod.POST)
-    public Result<String> enable(@RequestBody AgentRegisterParam param, Principal principal) {
+    public Result<String> enable(@Validated @RequestBody AgentRegisterParam param, Principal principal) {
         try {
             String userName = principal.getName();
             if (userName == null){
@@ -79,7 +80,7 @@ public class AgentController {
     }
 
     @RequestMapping(value = "/disable", method = RequestMethod.POST)
-    public Result<String> disable(@RequestBody AgentRegisterParam param, Principal principal) {
+    public Result<String> disable(@Validated @RequestBody AgentRegisterParam param, Principal principal) {
         try {
             String userName = principal.getName();
             if (userName == null){
@@ -104,7 +105,7 @@ public class AgentController {
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public Result<String> delete(@RequestBody AgentRegisterParam param, Principal principal) {
+    public Result<String> delete( @Validated @RequestBody AgentRegisterParam param, Principal principal) {
         try {
             String userName = principal.getName();
             if (userName == null){
