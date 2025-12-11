@@ -1,5 +1,6 @@
 package com.qcl.utils;
 
+import com.alibaba.fastjson.JSON;
 import okhttp3.*;
 import org.apache.lucene.util.CollectionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -141,8 +143,8 @@ public class OkHttpUtil {
      * @return 响应结果
      * @throws IOException IO异常
      */
-    public static String postJson(String url, String json) throws IOException {
-        return postJson(url, json, null);
+    public static String postJson(String url, Map<String, String> params) throws IOException {
+        return postJson(url, params, null);
     }
 
     /**
@@ -154,9 +156,10 @@ public class OkHttpUtil {
      * @return 响应结果
      * @throws IOException IO异常
      */
-    public static String postJson(String url, String json, Map<String, String> headers) throws IOException {
-        MediaType JSON = MediaType.get("application/json; charset=utf-8");
-        RequestBody body = RequestBody.create(json, JSON);
+    public static String postJson(String url, Map<String, String> params, Map<String, String> headers) throws IOException {
+        MediaType jsonType = MediaType.get("application/json; charset=utf-8");
+        String json = JSON.toJSONString(params);
+        RequestBody body = RequestBody.create(json, jsonType);
 
         Request.Builder builder = new Request.Builder()
                 .url(url)
@@ -209,7 +212,9 @@ public class OkHttpUtil {
      * @throws IOException IO异常
      */
     public static String postForm(String url, Map<String, String> params) throws IOException {
-        return postForm(url, params, null);
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/json");
+        return postForm(url, params, headers);
     }
 
     /**
@@ -276,26 +281,27 @@ public class OkHttpUtil {
      * PUT请求（JSON数据）
      *
      * @param url  请求URL
-     * @param json JSON数据
+     * @param params  请求参数
      * @return 响应结果
      * @throws IOException IO异常
      */
-    public static String putJson(String url, String json) throws IOException {
-        return putJson(url, json, null);
+    public static String putJson(String url,  Map<String, String> params) throws IOException {
+        return putJson(url, params, null);
     }
 
     /**
      * PUT请求（JSON数据）
      *
      * @param url     请求URL
-     * @param json    JSON数据
+     * @param params  请求参数
      * @param headers 请求头
      * @return 响应结果
      * @throws IOException IO异常
      */
-    public static String putJson(String url, String json, Map<String, String> headers) throws IOException {
-        MediaType JSON = MediaType.get("application/json; charset=utf-8");
-        RequestBody body = RequestBody.create(json, JSON);
+    public static String putJson(String url,  Map<String, String> params, Map<String, String> headers) throws IOException {
+        MediaType jsonType = MediaType.get("application/json; charset=utf-8");
+        String json = JSON.toJSONString(params);
+        RequestBody body = RequestBody.create(json, jsonType);
 
         Request.Builder builder = new Request.Builder()
                 .url(url)

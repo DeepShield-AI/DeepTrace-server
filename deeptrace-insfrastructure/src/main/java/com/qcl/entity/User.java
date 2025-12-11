@@ -157,6 +157,19 @@ public class User implements Serializable {
         // 根据用户角色返回相应的权限
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.role.toUpperCase()));
     }
+    public String toString() {
+        return "User{" +
+                "userId=" + userId +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", phone='" + phone + '\'' +
+                ", email='" + email + '\'' +
+                ", status=" + status +
+                ", role='" + role + '\'' +
+                ", note='" + note + '\'' +
+                ", createTime=" + createTime +
+                ", updateTime=" + updateTime ;
+    }
 
 }
 

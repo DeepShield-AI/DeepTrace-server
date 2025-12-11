@@ -2,11 +2,13 @@ package com.qcl.service.impl;
 
 import com.qcl.entity.param.AgentRegisterParam;
 import com.qcl.service.AgentService;
+import com.qcl.service.UserService;
 import com.qcl.utils.Constants;
 import com.qcl.utils.OkHttpUtil;
 import com.qcl.api.Result;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +22,7 @@ public class AgentServiceImpl implements AgentService {
 
 
     public ResponseEntity<String> forwardRequest(String param) {
-        String url = Constants.AGENT_ADDRESS + "/api/native-agent";
+        String url = Constants.AGENT_PROCESS_ADDR + "/api/native-agent";
 
         try {
             // 使用我们的工具类发送请求
@@ -43,7 +45,7 @@ public class AgentServiceImpl implements AgentService {
     }
 
     public Result<String> forwardGet(String param) {
-        String url = Constants.AGENT_ADDRESS + "/api/native-agent";
+        String url = Constants.AGENT_PROCESS_ADDR + "/api/native-agent";
         url="https://www.cnblogs.com/wuyongyin/p/16468864.html";
 
         try {
@@ -66,7 +68,7 @@ public class AgentServiceImpl implements AgentService {
     }
 
     public String registerAgent(AgentRegisterParam param) {
-        String url = "http://127.0.0.1:59002/register_agent";
+        String url = Constants.AGENT_PROCESS_ADDR + "/register_agent";
 
         // 将实体参数转换为Map
         Map<String, String> paramMap = new HashMap<>();
@@ -79,11 +81,78 @@ public class AgentServiceImpl implements AgentService {
 
         // 使用HttpClientUtil发送POST请求
         try {
-            return OkHttpUtil.postForm(url, paramMap);
+            String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
+            return result;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
+    }
+
+    @Override
+    public String delete(AgentRegisterParam param) {
+        String url = Constants.AGENT_PROCESS_ADDR + "/delete_agent";
+
+        // 将实体参数转换为Map
+        Map<String, String> paramMap = new HashMap<>();
+        paramMap.put("host_ip", param.getHostIp());
+        paramMap.put("user_name", param.getUserName());
+        paramMap.put("host_password", param.getHostPassword());
+        paramMap.put("user_id", param.getUserId());
+        paramMap.put("ssh_port", String.valueOf(param.getSshPort()));
+        paramMap.put("agent_name", param.getAgentName());
+
+        // 使用HttpClientUtil发送POST请求
+        try {
+            String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
+            return result;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String disable(AgentRegisterParam param) {
+        String url = Constants.AGENT_PROCESS_ADDR + "/stop_agent";
+
+        // 将实体参数转换为Map
+        Map<String, String> paramMap = new HashMap<>();
+        paramMap.put("host_ip", param.getHostIp());
+        paramMap.put("user_name", param.getUserName());
+        paramMap.put("host_password", param.getHostPassword());
+        paramMap.put("user_id", param.getUserId());
+        paramMap.put("ssh_port", String.valueOf(param.getSshPort()));
+        paramMap.put("agent_name", param.getAgentName());
+
+        // 使用HttpClientUtil发送POST请求
+        try {
+            String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
+            return result;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String enable(AgentRegisterParam param) {
+        String url = Constants.AGENT_PROCESS_ADDR + "/start_agent";
+
+        // 将实体参数转换为Map
+        Map<String, String> paramMap = new HashMap<>();
+        paramMap.put("host_ip", param.getHostIp());
+        paramMap.put("user_name", param.getUserName());
+        paramMap.put("host_password", param.getHostPassword());
+        paramMap.put("user_id", param.getUserId());
+        paramMap.put("ssh_port", String.valueOf(param.getSshPort()));
+        paramMap.put("agent_name", param.getAgentName());
+
+        // 使用HttpClientUtil发送POST请求
+        try {
+            String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
+            return result;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

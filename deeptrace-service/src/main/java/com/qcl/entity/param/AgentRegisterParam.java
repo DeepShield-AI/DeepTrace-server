@@ -1,12 +1,20 @@
 package com.qcl.entity.param;
 
+import jakarta.validation.constraints.NotEmpty;
+
 public class AgentRegisterParam {
+    @NotEmpty
     private String hostIp;
-    private String userName;
+
+    @NotEmpty
     private String hostPassword;
-    private String userId;
+    @NotEmpty
     private Integer sshPort;
+    @NotEmpty
     private String agentName;
+
+    private String userName;
+    private String userId;
 
     // getters and setters
     public String getHostIp() {

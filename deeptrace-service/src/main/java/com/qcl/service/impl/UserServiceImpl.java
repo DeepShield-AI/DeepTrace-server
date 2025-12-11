@@ -82,7 +82,7 @@ public class UserServiceImpl implements UserService {
             if(Objects.equals(user.getStatus(), UserStatusEnum.DISABLED.getCode())){
                 Asserts.fail("帐号已被禁用");
             }
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user.getUsername(), null, user.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
             token = jwtTokenUtil.generateToken(user);
