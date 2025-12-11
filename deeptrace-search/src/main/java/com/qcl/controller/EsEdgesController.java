@@ -10,17 +10,19 @@ import com.qcl.service.EsEdgeService;
 import com.qcl.vo.PageResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+//import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+
 
 import java.util.List;
 
 /**
  * 路径分析对外API
  */
-@Controller
+@RestController
 @RequestMapping("/api/esEdges")
 public class EsEdgesController {
 
@@ -36,7 +38,6 @@ public class EsEdgesController {
     @RequestMapping(value = "/log/queryByPage", method = RequestMethod.GET)
     public ResponseEntity<PageResult<Edges>> search(QueryEdgeParam queryEdgeParam) {
         PageResult<Edges> result = esEdgeService.queryByPage(queryEdgeParam);
-
         return ResponseEntity.ok(result);
     }
 
