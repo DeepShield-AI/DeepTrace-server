@@ -1,5 +1,6 @@
 package com.qcl.entity.param.agentconfig;
 
+import jakarta.validation.Valid;
 import lombok.Data;
 
 /**
@@ -7,6 +8,7 @@ import lombok.Data;
  */
 @Data
 public class EbpfParam {
+    @Valid
     private EbpfTraceParam trace;
 
     // Constructors

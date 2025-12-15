@@ -13,25 +13,25 @@ public class AgentInfoParam {
     /**
      * 采集器名字
      */
-    @NotEmpty(message = "名称不能为空")
+    @NotEmpty(message = "采集器名称不能为空")
     @JsonProperty("agent_name")
     private String agentName;
     /**
      * 采集器的密码
      */
-    @NotEmpty(message = "密码不能为空")
+    @NotEmpty(message = "采集器密码不能为空")
     @JsonProperty("host_password")
     private String hostPassword;
     /**
      * 采集器的IP
      */
-    @NotEmpty(message = "IP不能为空")
+    @NotEmpty(message = "采集器IP不能为空")
     @JsonProperty("host_ip")
     private String hostIp;
     /**
      * 采集器的SSH端口
      */
-    @NotNull(message = "SSH端口不能为空")
+    @NotNull(message = "采集器SSH端口不能为空")
     @JsonProperty("ssh_port")
     private Integer sshPort;
     /**

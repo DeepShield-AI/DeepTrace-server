@@ -1,10 +1,12 @@
 package com.qcl.entity.param.agentconfig;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.Valid;
 import lombok.Data;
 
 @Data
 public class SenderElasticParam {
+    @Valid
     @JsonProperty("trace")
     private SenderElasticTraceParam trace;
 

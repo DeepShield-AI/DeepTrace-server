@@ -179,13 +179,12 @@ public class OkHttpUtil {
     }
 
 
-    public static String postJson(String url, JSON params) throws IOException {
+    public static String postJson(String url, String params) throws IOException {
         return postJson(url, params, null);
     }
-    public static String postJson(String url, JSON params, Map<String, String> headers) throws IOException {
+    public static String postJson(String url, String params, Map<String, String> headers) throws IOException {
         MediaType jsonType = MediaType.get("application/json; charset=utf-8");
-        String json = JSON.toJSONString(params);
-        RequestBody body = RequestBody.create(json, jsonType);
+        RequestBody body = RequestBody.create(params, jsonType);
 
         Request.Builder builder = new Request.Builder()
                 .url(url)

@@ -171,11 +171,10 @@ public class AgentServiceImpl implements AgentService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        JSON json = JSON.parseObject(jsonStr);
 
         // 使用HttpClientUtil发送POST请求
         try {
-            String result = OkHttpUtil.postJson(url, json);
+            String result = OkHttpUtil.postJson(url, jsonStr);
             return result;
         } catch (IOException e) {
             throw new RuntimeException(e);
