@@ -139,7 +139,7 @@ public class OkHttpUtil {
      * POST请求（JSON数据）
      *
      * @param url  请求URL
-     * @param json JSON数据
+     * @param params JSON数据
      * @return 响应结果
      * @throws IOException IO异常
      */
@@ -151,7 +151,7 @@ public class OkHttpUtil {
      * POST请求（JSON数据）
      *
      * @param url     请求URL
-     * @param json    JSON数据
+     * @param params    JSON数据
      * @param headers 请求头
      * @return 响应结果
      * @throws IOException IO异常
@@ -177,6 +177,33 @@ public class OkHttpUtil {
             return response.body().string();
         }
     }
+
+
+    public static String postJson(String url, JSON params) throws IOException {
+        return postJson(url, params, null);
+    }
+    public static String postJson(String url, JSON params, Map<String, String> headers) throws IOException {
+        MediaType jsonType = MediaType.get("application/json; charset=utf-8");
+        String json = JSON.toJSONString(params);
+        RequestBody body = RequestBody.create(json, jsonType);
+
+        Request.Builder builder = new Request.Builder()
+                .url(url)
+                .post(body);
+
+        if (headers != null) {
+            headers.forEach(builder::addHeader);
+        }
+
+        Request request = builder.build();
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            if (response.body() == null) {
+                return "";
+            }
+            return response.body().string();
+        }
+    }
+
 
     /**
      * POST请求并返回详细响应

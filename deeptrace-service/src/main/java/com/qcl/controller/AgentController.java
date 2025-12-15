@@ -2,16 +2,17 @@ package com.qcl.controller;
 
 import com.qcl.entity.User;
 import com.qcl.entity.param.AgentRegisterParam;
+import com.qcl.entity.param.agentconfig.AgentParam;
 import com.qcl.service.AgentService;
 import com.qcl.api.Result;
 import com.qcl.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.Arrays;
 
 @Slf4j
 @RestController
@@ -48,7 +49,7 @@ public class AgentController {
             }
             return Result.success(result);
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("采集器注册异常",e);
             return Result.error(e.getMessage());
         }
     }
@@ -74,7 +75,7 @@ public class AgentController {
             }
             return Result.success(result);
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("采集器启用异常",e);
             return Result.error(e.getMessage());
         }
     }
@@ -99,7 +100,7 @@ public class AgentController {
             }
             return Result.success(result);
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("采集器禁用异常",e);
             return Result.error(e.getMessage());
         }
     }
@@ -124,9 +125,36 @@ public class AgentController {
             }
             return Result.success(result);
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("采集器删除异常",e);
             return Result.error(e.getMessage());
         }
     }
+
+    @RequestMapping(value = "/edit_agent_config", method = RequestMethod.POST)
+    public Result<String> editAgentConfig(@Validated @RequestBody AgentParam param, Principal principal) {
+        try {
+            String userName = principal.getName();
+            if (userName == null){
+                return Result.unauthorized("");
+            }
+            User user = this.userService.queryByUsername(userName);
+            if (user == null ){
+                return Result.error(userName+"该用户不存在");
+            }
+
+            param.getAgentInfo().setUserName(userName);
+            param.getAgentInfo().setUserId(user.getUserId().toString());
+            // 调用服务层处理注册逻辑
+            String result = agentService.editAgentConfig(param);
+            if (result == null || !result.contains("successfully")){
+                return Result.error("删除失败");
+            }
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("配置下发异常",e);
+            return Result.error(e.getMessage());
+        }
+    }
+
 
 }

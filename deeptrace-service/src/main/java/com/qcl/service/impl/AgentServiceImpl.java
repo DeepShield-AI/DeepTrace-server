@@ -1,6 +1,10 @@
 package com.qcl.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.entity.param.AgentRegisterParam;
+import com.qcl.entity.param.agentconfig.AgentParam;
 import com.qcl.service.AgentService;
 import com.qcl.service.UserService;
 import com.qcl.utils.Constants;
@@ -149,6 +153,29 @@ public class AgentServiceImpl implements AgentService {
         // 使用HttpClientUtil发送POST请求
         try {
             String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
+            return result;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String editAgentConfig(AgentParam param) {
+        String url = Constants.AGENT_PROCESS_ADDR + "/sync_agent_config";
+
+        // 将实体参数转换为Map
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonStr = null;
+        try {
+            jsonStr = mapper.writeValueAsString(param);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        JSON json = JSON.parseObject(jsonStr);
+
+        // 使用HttpClientUtil发送POST请求
+        try {
+            String result = OkHttpUtil.postJson(url, json);
             return result;
         } catch (IOException e) {
             throw new RuntimeException(e);
