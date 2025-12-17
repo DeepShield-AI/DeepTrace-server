@@ -8,13 +8,13 @@ public interface AgentService {
 
     Result<String> forwardGet(String param);
 
-    String registerAgent(AgentRegisterParam param);
+    Result<String>  registerAgent(AgentRegisterParam param);
 
-    String delete(AgentRegisterParam param);
+    Result<String>  delete(AgentRegisterParam param);
 
-    String disable(AgentRegisterParam param);
+    Result<String> disable(AgentRegisterParam param);
 
-    String enable(AgentRegisterParam param);
+    Result<String> enable(AgentRegisterParam param);
 
     String editAgentConfig(AgentParam param);
 }

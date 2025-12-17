@@ -1,12 +1,16 @@
 package com.qcl.controller;
 
+import com.qcl.constants.AgentManageTypeEnum;
+import com.qcl.entity.AgentManageConfig;
 import com.qcl.entity.User;
 import com.qcl.entity.param.AgentRegisterParam;
 import com.qcl.entity.param.agentconfig.AgentParam;
+import com.qcl.service.AgentManageConfigService;
 import com.qcl.service.AgentService;
 import com.qcl.api.Result;
 import com.qcl.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +27,9 @@ public class AgentController {
     private AgentService agentService;
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private AgentManageConfigService agentManageConfigService;
 
     @RequestMapping(value = "/get", method = RequestMethod.GET)
     Result<String> forwardGet(String param){
@@ -43,11 +50,8 @@ public class AgentController {
             param.setUserName(userName);
             param.setUserId(user.getUserId().toString());
             // 调用服务层处理注册逻辑
-            String result = agentService.registerAgent(param);
-            if (result == null || !result.contains("successfully")){
-                return Result.error("注册失败");
-            }
-            return Result.success(result);
+            return agentService.registerAgent(param);
+
         } catch (Exception e) {
             log.error("采集器注册异常",e);
             return Result.error(e.getMessage());
@@ -69,11 +73,8 @@ public class AgentController {
             param.setUserName(userName);
             param.setUserId(user.getUserId().toString());
             // 调用服务层处理注册逻辑
-            String result = agentService.enable(param);
-            if (result == null || !result.contains("successfully")){
-                return Result.error("启用失败");
-            }
-            return Result.success(result);
+            return agentService.enable(param);
+
         } catch (Exception e) {
             log.error("采集器启用异常",e);
             return Result.error(e.getMessage());
@@ -94,11 +95,8 @@ public class AgentController {
             param.setUserName(userName);
             param.setUserId(user.getUserId().toString());
             // 调用服务层处理注册逻辑
-            String result = agentService.disable(param);
-            if (result == null || !result.contains("successfully")){
-                return Result.error("禁用失败");
-            }
-            return Result.success(result);
+            return agentService.disable(param);
+
         } catch (Exception e) {
             log.error("采集器禁用异常",e);
             return Result.error(e.getMessage());
@@ -119,11 +117,8 @@ public class AgentController {
             param.setUserName(userName);
             param.setUserId(user.getUserId().toString());
             // 调用服务层处理注册逻辑
-            String result = agentService.delete(param);
-            if (result == null || !result.contains("successfully")){
-                return Result.error("删除失败");
-            }
-            return Result.success(result);
+            return agentService.delete(param);
+
         } catch (Exception e) {
             log.error("采集器删除异常",e);
             return Result.error(e.getMessage());

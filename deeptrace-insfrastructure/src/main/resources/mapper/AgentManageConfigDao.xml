@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qcl.dao.AgentManageConfigDao">
+
+    <resultMap type="com.qcl.entity.AgentManageConfig" id="AgentManageConfigMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="type" column="type" jdbcType="VARCHAR"/>
+        <result property="hostIp" column="host_ip" jdbcType="VARCHAR"/>
+        <result property="hostPassword" column="host_password" jdbcType="VARCHAR"/>
+        <result property="sshPort" column="ssh_port" jdbcType="INTEGER"/>
+        <result property="agentName" column="agent_name" jdbcType="VARCHAR"/>
+        <result property="userName" column="user_name" jdbcType="VARCHAR"/>
+        <result property="userId" column="user_id" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!--查询单个-->
+    <select id="queryById" resultMap="AgentManageConfigMap">
+        select
+id, type, host_ip, host_password, ssh_port, agent_name, user_name, user_id, create_time, updated_at
+        from agent_manage_config
+        where id = #{id}
+    </select>
+
+    <!--查询指定行数据-->
+    <select id="queryAllByLimit" resultMap="AgentManageConfigMap">
+        select
+id, type, host_ip, host_password, ssh_port, agent_name, user_name, user_id, create_time, updated_at
+        from agent_manage_config
+        <where>
+            <if test="id != null">
+                and id = #{id}
+            </if>
+            <if test="type != null and type != ''">
+                and type = #{type}
+            </if>
+            <if test="hostIp != null and hostIp != ''">
+                and host_ip = #{hostIp}
+            </if>
+            <if test="hostPassword != null and hostPassword != ''">
+                and host_password = #{hostPassword}
+            </if>
+            <if test="sshPort != null">
+                and ssh_port = #{sshPort}
+            </if>
+            <if test="agentName != null and agentName != ''">
+                and agent_name = #{agentName}
+            </if>
+            <if test="userName != null and userName != ''">
+                and user_name = #{userName}
+            </if>
+            <if test="userId != null and userId != ''">
+                and user_id = #{userId}
+            </if>
+            <if test="createTime != null">
+                and create_time = #{createTime}
+            </if>
+            <if test="updatedAt != null">
+                and updated_at = #{updatedAt}
+            </if>
+        </where>
+        limit #{pageable.offset}, #{pageable.pageSize}
+    </select>
+
+    <!--统计总行数-->
+    <select id="count" resultType="java.lang.Long">
+        select count(1)
+        from agent_manage_config
+        <where>
+            <if test="id != null">
+                and id = #{id}
+            </if>
+            <if test="type != null and type != ''">
+                and type = #{type}
+            </if>
+            <if test="hostIp != null and hostIp != ''">
+                and host_ip = #{hostIp}
+            </if>
+            <if test="hostPassword != null and hostPassword != ''">
+                and host_password = #{hostPassword}
+            </if>
+            <if test="sshPort != null">
+                and ssh_port = #{sshPort}
+            </if>
+            <if test="agentName != null and agentName != ''">
+                and agent_name = #{agentName}
+            </if>
+            <if test="userName != null and userName != ''">
+                and user_name = #{userName}
+            </if>
+            <if test="userId != null and userId != ''">
+                and user_id = #{userId}
+            </if>
+            <if test="createTime != null">
+                and create_time = #{createTime}
+            </if>
+            <if test="updatedAt != null">
+                and updated_at = #{updatedAt}
+            </if>
+        </where>
+    </select>
+
+    <!--新增所有列-->
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into agent_manage_config(type, host_ip, host_password, ssh_port, agent_name, user_name, user_id, create_time, updated_at)
+        values (#{type}, #{hostIp}, #{hostPassword}, #{sshPort}, #{agentName}, #{userName}, #{userId}, #{createTime}, #{updatedAt})
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into agent_manage_config(type, host_ip, host_password, ssh_port, agent_name, user_name, user_id, create_time, updated_at)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+        (#{entity.type}, #{entity.hostIp}, #{entity.hostPassword}, #{entity.sshPort}, #{entity.agentName}, #{entity.userName}, #{entity.userId}, #{entity.createTime}, #{entity.updatedAt})
+        </foreach>
+    </insert>
+
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into agent_manage_config(type, host_ip, host_password, ssh_port, agent_name, user_name, user_id, create_time, updated_at)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.type}, #{entity.hostIp}, #{entity.hostPassword}, #{entity.sshPort}, #{entity.agentName}, #{entity.userName}, #{entity.userId}, #{entity.createTime}, #{entity.updatedAt})
+        </foreach>
+        on duplicate key update
+type = values(type),
+host_ip = values(host_ip),
+host_password = values(host_password),
+ssh_port = values(ssh_port),
+agent_name = values(agent_name),
+user_name = values(user_name),
+user_id = values(user_id),
+create_time = values(create_time),
+updated_at = values(updated_at)
+    </insert>
+
+    <!--通过主键修改数据-->
+    <update id="update">
+        update agent_manage_config
+        <set>
+            <if test="type != null and type != ''">
+                type = #{type},
+            </if>
+            <if test="hostIp != null and hostIp != ''">
+                host_ip = #{hostIp},
+            </if>
+            <if test="hostPassword != null and hostPassword != ''">
+                host_password = #{hostPassword},
+            </if>
+            <if test="sshPort != null">
+                ssh_port = #{sshPort},
+            </if>
+            <if test="agentName != null and agentName != ''">
+                agent_name = #{agentName},
+            </if>
+            <if test="userName != null and userName != ''">
+                user_name = #{userName},
+            </if>
+            <if test="userId != null and userId != ''">
+                user_id = #{userId},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime},
+            </if>
+            <if test="updatedAt != null">
+                updated_at = #{updatedAt},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--通过主键删除-->
+    <delete id="deleteById">
+        delete from agent_manage_config where id = #{id}
+    </delete>
+
+    <!--根据条件删除-->
+    <delete id="deleteByParam">
+        delete from agent_manage_config
+        <where>
+            <if test="id != null">
+                and id = #{id}
+            </if>
+            <if test="type != null and type != ''">
+                and type = #{type}
+            </if>
+            <if test="hostIp != null and hostIp != ''">
+                and host_ip = #{hostIp}
+            </if>
+            <if test="userId != null and userId != ''">
+                and user_id = #{userId}
+            </if>
+        </where>
+    </delete>
+
+</mapper>
+

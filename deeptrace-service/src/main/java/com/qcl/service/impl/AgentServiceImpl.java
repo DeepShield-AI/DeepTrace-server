@@ -1,10 +1,14 @@
 package com.qcl.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qcl.constants.AgentManageTypeEnum;
+import com.qcl.entity.AgentManageConfig;
 import com.qcl.entity.param.AgentRegisterParam;
 import com.qcl.entity.param.agentconfig.AgentParam;
+import com.qcl.service.AgentManageConfigService;
 import com.qcl.service.AgentService;
 import com.qcl.service.UserService;
 import com.qcl.utils.Constants;
@@ -12,11 +16,13 @@ import com.qcl.utils.OkHttpUtil;
 import com.qcl.api.Result;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +30,8 @@ import java.util.Map;
 @Service
 public class AgentServiceImpl implements AgentService {
 
+    @Autowired
+    private AgentManageConfigService agentManageConfigService;
 
     public ResponseEntity<String> forwardRequest(String param) {
         String url = Constants.AGENT_PROCESS_ADDR + "/api/native-agent";
@@ -71,7 +79,14 @@ public class AgentServiceImpl implements AgentService {
         }
     }
 
-    public String registerAgent(AgentRegisterParam param) {
+    public Result<String>  registerAgent(AgentRegisterParam param) {
+        //判断host_ip是否已被注册过
+        Boolean hasRegister = agentManageConfigService.isHostIpExist(param.getHostIp(), AgentManageTypeEnum.REGISTER.getCode());
+        if (hasRegister){
+            log.error(param.getHostIp()+ " 已被注册 ：" + param);
+            return Result.error(param.getHostIp()+ " 已被注册");
+        }
+
         String url = Constants.AGENT_PROCESS_ADDR + "/register_agent";
 
         // 将实体参数转换为Map
@@ -86,7 +101,25 @@ public class AgentServiceImpl implements AgentService {
         // 使用HttpClientUtil发送POST请求
         try {
             String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
-            return result;
+            if (result == null ){
+                return Result.error("注册失败");
+            }
+            // 解析响应
+            JSONObject jsonObject = JSON.parseObject(result);
+            int code = jsonObject.getInteger("code");
+            String message = jsonObject.getString("message");
+
+            if (code != 200) {
+                return Result.error("操作失败: " + message);
+            }
+
+            //注册配置入库
+            AgentManageConfig agentManageConfig = new AgentManageConfig();
+            agentManageConfig.setType(AgentManageTypeEnum.REGISTER.getCode());
+            agentManageConfig.setCreateTime(new Date());
+            BeanUtils.copyProperties(param,agentManageConfig);
+            agentManageConfigService.insert(agentManageConfig);
+            return Result.success(result);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -94,7 +127,7 @@ public class AgentServiceImpl implements AgentService {
     }
 
     @Override
-    public String delete(AgentRegisterParam param) {
+    public Result<String> delete(AgentRegisterParam param) {
         String url = Constants.AGENT_PROCESS_ADDR + "/delete_agent";
 
         // 将实体参数转换为Map
@@ -109,14 +142,32 @@ public class AgentServiceImpl implements AgentService {
         // 使用HttpClientUtil发送POST请求
         try {
             String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
-            return result;
+            if (result == null){
+                return Result.error("启用失败");
+            }
+            // 在解析响应前添加验证
+            if (!isValidJson(result)) {
+                return Result.error("启用失败：" + result);
+            }
+            // 解析响应
+            JSONObject jsonObject = JSON.parseObject(result);
+            int code = jsonObject.getInteger("code");
+            String message = jsonObject.getString("message");
+
+            if (code != 200) {
+                return Result.error("操作失败: " + message);
+            }
+
+            //同步删除配置信息
+            agentManageConfigService.deleteByHostIp(param.getUserId(), param.getHostIp());
+            return Result.success(result);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public String disable(AgentRegisterParam param) {
+    public Result<String> disable(AgentRegisterParam param) {
         String url = Constants.AGENT_PROCESS_ADDR + "/stop_agent";
 
         // 将实体参数转换为Map
@@ -131,14 +182,39 @@ public class AgentServiceImpl implements AgentService {
         // 使用HttpClientUtil发送POST请求
         try {
             String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
-            return result;
+
+            if (result == null){
+                return Result.error("启用失败");
+            }
+            // 在解析响应前添加验证
+            if (!isValidJson(result)) {
+                return Result.error("启用失败：" + result);
+            }
+            // 解析响应
+            JSONObject jsonObject = JSON.parseObject(result);
+            int code = jsonObject.getInteger("code");
+            String message = jsonObject.getString("message");
+
+            if (code != 200) {
+                return Result.error("操作失败: " + message);
+            }
+
+
+            //禁用配置入库
+            AgentManageConfig agentManageConfig = new AgentManageConfig();
+            agentManageConfig.setType(AgentManageTypeEnum.DISABLE.getCode());
+            BeanUtils.copyProperties(param,agentManageConfig);
+            agentManageConfigService.insert(agentManageConfig);
+
+            return Result.success(result);
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public String enable(AgentRegisterParam param) {
+    public  Result<String>  enable(AgentRegisterParam param) {
         String url = Constants.AGENT_PROCESS_ADDR + "/start_agent";
 
         // 将实体参数转换为Map
@@ -153,7 +229,29 @@ public class AgentServiceImpl implements AgentService {
         // 使用HttpClientUtil发送POST请求
         try {
             String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
-            return result;
+            if (result == null){
+                return Result.error("启用失败");
+            }
+            // 在解析响应前添加验证
+            if (!isValidJson(result)) {
+                return Result.error("启用失败：" + result);
+            }
+            // 解析响应
+            JSONObject jsonObject = JSON.parseObject(result);
+            int code = jsonObject.getInteger("code");
+            String message = jsonObject.getString("message");
+
+            if (code != 200) {
+                return Result.error("操作失败: " + message);
+            }
+
+            //注册配置入库
+            AgentManageConfig agentManageConfig = new AgentManageConfig();
+            agentManageConfig.setType(AgentManageTypeEnum.ENABLE.getCode());
+            BeanUtils.copyProperties(param,agentManageConfig);
+            agentManageConfigService.insert(agentManageConfig);
+
+            return Result.success(result);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -181,5 +279,23 @@ public class AgentServiceImpl implements AgentService {
         }
     }
 
+
+
+    /**
+     * 判断字符串是否为有效的JSON格式
+     * @param str 待验证的字符串
+     * @return 是否为JSON格式
+     */
+    private boolean isValidJson(String str) {
+        if (str == null || str.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            JSON.parseObject(str);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
 }

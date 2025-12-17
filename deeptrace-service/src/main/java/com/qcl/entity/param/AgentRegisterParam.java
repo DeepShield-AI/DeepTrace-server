@@ -2,7 +2,9 @@ package com.qcl.entity.param;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import lombok.ToString;
 
+@ToString
 public class AgentRegisterParam {
     @NotEmpty(message = "IP不能为空")
     private String hostIp;
