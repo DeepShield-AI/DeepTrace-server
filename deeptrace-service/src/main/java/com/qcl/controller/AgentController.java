@@ -8,6 +8,7 @@ import com.qcl.entity.param.agentconfig.AgentParam;
 import com.qcl.service.AgentManageConfigService;
 import com.qcl.service.AgentService;
 import com.qcl.api.Result;
+import com.qcl.service.AgentUserConfigService;
 import com.qcl.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -28,9 +29,9 @@ public class AgentController {
     private AgentService agentService;
     @Autowired
     private UserService userService;
-
     @Autowired
     private AgentManageConfigService agentManageConfigService;
+
 
     @RequestMapping(value = "/get", method = RequestMethod.GET)
     Result<String> forwardGet(String param){
@@ -48,7 +49,6 @@ public class AgentController {
             if (user == null ){
                 return Result.error(userName+"该用户不存在");
             }
-            param.setUserName(userName);
             param.setUserId(user.getUserId().toString());
             // 调用服务层处理注册逻辑
             return agentService.registerAgent(param);
@@ -71,7 +71,6 @@ public class AgentController {
             if (user == null ){
                 return Result.error(userName+"该用户不存在");
             }
-            param.setUserName(userName);
             param.setUserId(user.getUserId().toString());
             // 调用服务层处理注册逻辑
             return agentService.enable(param);
@@ -93,7 +92,6 @@ public class AgentController {
             if (user == null ){
                 return Result.error(userName+"该用户不存在");
             }
-            param.setUserName(userName);
             param.setUserId(user.getUserId().toString());
             // 调用服务层处理注册逻辑
             return agentService.disable(param);
@@ -115,7 +113,6 @@ public class AgentController {
             if (user == null ){
                 return Result.error(userName+"该用户不存在");
             }
-            param.setUserName(userName);
             param.setUserId(user.getUserId().toString());
             // 调用服务层处理注册逻辑
             return agentService.delete(param);
@@ -161,14 +158,10 @@ public class AgentController {
                 return Result.error(userName+"该用户不存在");
             }
 
-            param.getAgentInfo().setUserName(userName);
             param.getAgentInfo().setUserId(user.getUserId().toString());
             // 调用服务层处理注册逻辑
-            String result = agentService.editAgentConfig(param);
-            if (result == null || !result.contains("successfully")){
-                return Result.error("删除失败");
-            }
-            return Result.success(result);
+            return agentService.editAgentConfig(param);
+
         } catch (Exception e) {
             log.error("配置下发异常",e);
             return Result.error(e.getMessage());

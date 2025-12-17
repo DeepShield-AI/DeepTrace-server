@@ -6,10 +6,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.constants.AgentManageTypeEnum;
 import com.qcl.entity.AgentManageConfig;
+import com.qcl.entity.AgentUserConfig;
 import com.qcl.entity.param.AgentRegisterParam;
 import com.qcl.entity.param.agentconfig.AgentParam;
 import com.qcl.service.AgentManageConfigService;
 import com.qcl.service.AgentService;
+import com.qcl.service.AgentUserConfigService;
 import com.qcl.service.UserService;
 import com.qcl.utils.Constants;
 import com.qcl.utils.OkHttpUtil;
@@ -32,6 +34,8 @@ public class AgentServiceImpl implements AgentService {
 
     @Autowired
     private AgentManageConfigService agentManageConfigService;
+    @Autowired
+    private AgentUserConfigService agentUserConfigService;
 
     public ResponseEntity<String> forwardRequest(String param) {
         String url = Constants.AGENT_PROCESS_ADDR + "/api/native-agent";
@@ -83,9 +87,16 @@ public class AgentServiceImpl implements AgentService {
         //判断host_ip是否已被注册过
         Boolean hasRegister = agentManageConfigService.isHostIpExist(param.getHostIp(), AgentManageTypeEnum.REGISTER.getCode());
         if (hasRegister){
-            log.error(param.getHostIp()+ " 已被注册 ：" + param);
-            return Result.error(param.getHostIp()+ " 已被注册");
+            log.error(param.getHostIp()+ " 注册中，请10分钟后查看" + param);
+            return Result.error(param.getHostIp()+ " 注册中，请10分钟后查看");
         }
+
+        //注册配置入库
+        AgentManageConfig agentManageConfig = new AgentManageConfig();
+        agentManageConfig.setType(AgentManageTypeEnum.REGISTER.getCode());
+        agentManageConfig.setCreateTime(new Date());
+        BeanUtils.copyProperties(param,agentManageConfig);
+        agentManageConfigService.insert(agentManageConfig);
 
         String url = Constants.AGENT_PROCESS_ADDR + "/register_agent";
 
@@ -104,6 +115,10 @@ public class AgentServiceImpl implements AgentService {
             if (result == null ){
                 return Result.error("注册失败");
             }
+            // 在解析响应前添加验证
+            if (!isValidJson(result)) {
+                return Result.error("注册失败：" + result);
+            }
             // 解析响应
             JSONObject jsonObject = JSON.parseObject(result);
             int code = jsonObject.getInteger("code");
@@ -113,12 +128,7 @@ public class AgentServiceImpl implements AgentService {
                 return Result.error("操作失败: " + message);
             }
 
-            //注册配置入库
-            AgentManageConfig agentManageConfig = new AgentManageConfig();
-            agentManageConfig.setType(AgentManageTypeEnum.REGISTER.getCode());
-            agentManageConfig.setCreateTime(new Date());
-            BeanUtils.copyProperties(param,agentManageConfig);
-            agentManageConfigService.insert(agentManageConfig);
+
             return Result.success(result);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -143,11 +153,11 @@ public class AgentServiceImpl implements AgentService {
         try {
             String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
             if (result == null){
-                return Result.error("启用失败");
+                return Result.error("删除失败");
             }
             // 在解析响应前添加验证
             if (!isValidJson(result)) {
-                return Result.error("启用失败：" + result);
+                return Result.error("删除失败：" + result);
             }
             // 解析响应
             JSONObject jsonObject = JSON.parseObject(result);
@@ -184,11 +194,11 @@ public class AgentServiceImpl implements AgentService {
             String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
 
             if (result == null){
-                return Result.error("启用失败");
+                return Result.error("禁用失败");
             }
             // 在解析响应前添加验证
             if (!isValidJson(result)) {
-                return Result.error("启用失败：" + result);
+                return Result.error("禁用失败：" + result);
             }
             // 解析响应
             JSONObject jsonObject = JSON.parseObject(result);
@@ -258,8 +268,15 @@ public class AgentServiceImpl implements AgentService {
     }
 
     @Override
-    public String editAgentConfig(AgentParam param) {
+    public Result<String> editAgentConfig(AgentParam param) {
         String url = Constants.AGENT_PROCESS_ADDR + "/sync_agent_config";
+
+        //将本次新增/修改的配置入库
+        AgentUserConfig agentUserConfig = new AgentUserConfig();
+        agentUserConfig.setUserId(param.getAgentInfo().getUserId());
+        agentUserConfig.setHostIp(param.getAgentInfo().getHostIp());
+        agentUserConfig.setAgentName(param.getAgentInfo().getAgentName());
+        agentUserConfig.setCreateTime(new Date());
 
         // 将实体参数转换为Map
         ObjectMapper mapper = new ObjectMapper();
@@ -269,11 +286,31 @@ public class AgentServiceImpl implements AgentService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+        agentUserConfig.setConfig(jsonStr);
+        agentUserConfigService.insert(agentUserConfig);
+
 
         // 使用HttpClientUtil发送POST请求
         try {
             String result = OkHttpUtil.postJson(url, jsonStr);
-            return result;
+            if (result == null){
+                return Result.error("配置下发失败");
+            }
+            // 在解析响应前添加验证
+            if (!isValidJson(result)) {
+                return Result.error("配置下发失败：" + result);
+            }
+            // 解析响应
+            JSONObject jsonObject = JSON.parseObject(result);
+            int code = jsonObject.getInteger("code");
+            String message = jsonObject.getString("message");
+
+            if (code != 200) {
+                return Result.error("操作失败: " + message);
+            }
+
+
+            return Result.success(result);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

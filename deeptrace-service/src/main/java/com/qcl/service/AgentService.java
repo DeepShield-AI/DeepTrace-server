@@ -16,5 +16,5 @@ public interface AgentService {
 
     Result<String> enable(AgentRegisterParam param);
 
-    String editAgentConfig(AgentParam param);
+    Result<String> editAgentConfig(AgentParam param);
 }

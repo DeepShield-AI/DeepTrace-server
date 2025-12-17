@@ -17,7 +17,7 @@ public class AgentRegisterParam {
 
     @NotEmpty(message = "名称不能为空")
     private String agentName;
-
+    @NotEmpty(message = "主机名不能为空")
     private String userName;
     private String userId;
 

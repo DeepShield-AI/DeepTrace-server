@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qcl.dao.AgentUserConfigDao">
+
+    <resultMap type="com.qcl.entity.AgentUserConfig" id="AgentUserConfigMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="hostIp" column="host_ip" jdbcType="VARCHAR"/>
+        <result property="agentName" column="agent_name" jdbcType="VARCHAR"/>
+        <result property="userId" column="user_id" jdbcType="VARCHAR"/>
+        <result property="config" column="config" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!--查询单个-->
+    <select id="queryById" resultMap="AgentUserConfigMap">
+        select
+id, host_ip, agent_name, user_id, config, create_time, updated_at
+        from agent_user_config
+        where id = #{id}
+    </select>
+
+    <!--查询指定行数据-->
+    <select id="queryAllByLimit" resultMap="AgentUserConfigMap">
+        select
+             id, host_ip, agent_name, user_id, config, create_time, updated_at
+        from agent_user_config
+        <where>
+            <if test="agentUserConfig.id != null">
+                and id = #{agentUserConfig.id}
+            </if>
+            <if test="agentUserConfig.hostIp != null and agentUserConfig.hostIp != ''">
+                and host_ip = #{agentUserConfig.hostIp}
+            </if>
+            <if test="agentUserConfig.agentName != null and agentUserConfig.agentName != ''">
+                and agent_name = #{agentUserConfig.agentName}
+            </if>
+            <if test="agentUserConfig.userId != null and agentUserConfig.userId != ''">
+                and user_id = #{agentUserConfig.userId}
+            </if>
+            <if test="agentUserConfig.config != null and agentUserConfig.config != ''">
+                and config = #{agentUserConfig.config}
+            </if>
+            <if test="agentUserConfig.createTime != null">
+                and create_time = #{agentUserConfig.createTime}
+            </if>
+            <if test="agentUserConfig.updatedAt != null">
+                and updated_at = #{agentUserConfig.updatedAt}
+            </if>
+        </where>
+        limit #{pageable.offset}, #{pageable.pageSize}
+    </select>
+
+    <!--统计总行数-->
+    <select id="count" resultType="java.lang.Long">
+        select count(1)
+        from agent_user_config
+        <where>
+            <if test="id != null">
+                and id = #{id}
+            </if>
+            <if test="hostIp != null and hostIp != ''">
+                and host_ip = #{hostIp}
+            </if>
+            <if test="agentName != null and agentName != ''">
+                and agent_name = #{agentName}
+            </if>
+            <if test="userId != null and userId != ''">
+                and user_id = #{userId}
+            </if>
+            <if test="config != null and config != ''">
+                and config = #{config}
+            </if>
+            <if test="createTime != null">
+                and create_time = #{createTime}
+            </if>
+            <if test="updatedAt != null">
+                and updated_at = #{updatedAt}
+            </if>
+        </where>
+    </select>
+
+    <!--新增所有列-->
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into agent_user_config(host_ip, agent_name, user_id, config, create_time, updated_at)
+        values (#{hostIp}, #{agentName}, #{userId}, #{config}, #{createTime}, #{updatedAt})
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into agent_user_config(host_ip, agent_name, user_id, config, create_time, updated_at)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+        (#{entity.hostIp}, #{entity.agentName}, #{entity.userId}, #{entity.config}, #{entity.createTime}, #{entity.updatedAt})
+        </foreach>
+    </insert>
+
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into agent_user_config(host_ip, agent_name, user_id, config, create_time, updated_at)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.hostIp}, #{entity.agentName}, #{entity.userId}, #{entity.config}, #{entity.createTime}, #{entity.updatedAt})
+        </foreach>
+        on duplicate key update
+host_ip = values(host_ip),
+agent_name = values(agent_name),
+user_id = values(user_id),
+config = values(config),
+create_time = values(create_time),
+updated_at = values(updated_at)
+    </insert>
+
+    <!--通过主键修改数据-->
+    <update id="update">
+        update agent_user_config
+        <set>
+            <if test="hostIp != null and hostIp != ''">
+                host_ip = #{hostIp},
+            </if>
+            <if test="agentName != null and agentName != ''">
+                agent_name = #{agentName},
+            </if>
+            <if test="userId != null and userId != ''">
+                user_id = #{userId},
+            </if>
+            <if test="config != null and config != ''">
+                config = #{config},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime},
+            </if>
+            <if test="updatedAt != null">
+                updated_at = #{updatedAt},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--通过主键删除-->
+    <delete id="deleteById">
+        delete from agent_user_config where id = #{id}
+    </delete>
+
+</mapper>
+

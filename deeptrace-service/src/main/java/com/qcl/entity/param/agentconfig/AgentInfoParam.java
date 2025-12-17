@@ -37,6 +37,7 @@ public class AgentInfoParam {
     /**
      * 当前登录用户的用户名
      */
+    @NotNull(message = "采集器主机名不能为空")
     @JsonProperty("user_name")
     private String userName;
     /**

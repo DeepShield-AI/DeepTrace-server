@@ -11,5 +11,6 @@ CREATE TABLE agent_manage_config (
     user_name VARCHAR(255) COMMENT '用户名',
     user_id VARCHAR(255) COMMENT '用户ID',
     create_time TIMESTAMP  DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY `uk_ip_type`(`host_ip`,`type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='采集器管理信息表（注册、启用、禁用、删除等）';
