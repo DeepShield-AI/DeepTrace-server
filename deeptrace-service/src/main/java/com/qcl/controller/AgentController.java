@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -119,6 +120,29 @@ public class AgentController {
             // 调用服务层处理注册逻辑
             return agentService.delete(param);
 
+        } catch (Exception e) {
+            log.error("采集器删除异常",e);
+            return Result.error(e.getMessage());
+        }
+    }
+    @RequestMapping(value = "/query_manage_config", method = RequestMethod.GET)
+    public Result<List<AgentManageConfig>> queryManageConfig(@Validated @RequestParam String hostIp, Principal principal) {
+        try {
+            String userName = principal.getName();
+            if (userName == null){
+                return Result.unauthorized(null);
+            }
+            User user = this.userService.queryByUsername(userName);
+            if (user == null ){
+                return Result.error(userName+"该用户不存在");
+            }
+
+            AgentManageConfig agentManageConfig = new AgentManageConfig();
+            agentManageConfig.setUserId(user.getUserId().toString());
+            agentManageConfig.setHostIp(hostIp);
+            List<AgentManageConfig>  result = agentManageConfigService.queryAll(agentManageConfig);
+
+            return Result.success(result);
         } catch (Exception e) {
             log.error("采集器删除异常",e);
             return Result.error(e.getMessage());

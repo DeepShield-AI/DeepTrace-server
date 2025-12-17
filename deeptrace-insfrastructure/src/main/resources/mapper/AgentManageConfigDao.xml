@@ -192,5 +192,43 @@ updated_at = values(updated_at)
         </where>
     </delete>
 
+    <select id="queryAll" resultMap="AgentManageConfigMap">
+        select
+        id, type, host_ip, host_password, ssh_port, agent_name, user_name, user_id, create_time, updated_at
+        from agent_manage_config
+        <where>
+            <if test="id != null">
+                and id = #{id}
+            </if>
+            <if test="type != null and type != ''">
+                and type = #{type}
+            </if>
+            <if test="hostIp != null and hostIp != ''">
+                and host_ip = #{hostIp}
+            </if>
+            <if test="hostPassword != null and hostPassword != ''">
+                and host_password = #{hostPassword}
+            </if>
+            <if test="sshPort != null">
+                and ssh_port = #{sshPort}
+            </if>
+            <if test="agentName != null and agentName != ''">
+                and agent_name = #{agentName}
+            </if>
+            <if test="userName != null and userName != ''">
+                and user_name = #{userName}
+            </if>
+            <if test="userId != null and userId != ''">
+                and user_id = #{userId}
+            </if>
+            <if test="createTime != null">
+                and create_time = #{createTime}
+            </if>
+            <if test="updatedAt != null">
+                and updated_at = #{updatedAt}
+            </if>
+        </where>
+    </select>
+
 </mapper>
 

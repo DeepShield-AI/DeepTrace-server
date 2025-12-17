@@ -85,5 +85,7 @@ public interface AgentManageConfigDao {
      * @return 删除的记录数
      */
     int deleteByParam(AgentManageConfig agentManageConfig);
+
+    List<AgentManageConfig> queryAll(AgentManageConfig agentManageConfig);
 }
 

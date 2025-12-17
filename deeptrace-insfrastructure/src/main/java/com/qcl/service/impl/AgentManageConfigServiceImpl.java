@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * 采集器管理信息表（注册、启用、禁用、删除等）(AgentManageConfig)表服务实现类
@@ -95,6 +96,11 @@ public class AgentManageConfigServiceImpl implements AgentManageConfigService {
         agentManageConfig.setUserId(userId);
         agentManageConfig.setHostIp(hostIp);
         return this.agentManageConfigDao.deleteByParam(agentManageConfig)>0;
+    }
+
+    @Override
+    public List<AgentManageConfig> queryAll(AgentManageConfig agentManageConfig){
+        return this.agentManageConfigDao.queryAll(agentManageConfig);
     }
 
 

@@ -4,6 +4,8 @@ import com.qcl.entity.AgentManageConfig;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
+import java.util.List;
+
 /**
  * 采集器管理信息表（注册、启用、禁用、删除等）(AgentManageConfig)表服务接口
  *
@@ -56,5 +58,13 @@ public interface AgentManageConfigService {
     boolean isHostIpExist(String hostIp,String type);
 
     boolean deleteByHostIp(String userId, String hostIp);
+
+    /**
+     * 分页查询
+     *
+     * @param agentManageConfig 筛选条件
+     * @return 查询结果
+     */
+    List<AgentManageConfig> queryAll(AgentManageConfig agentManageConfig);
 
 }
