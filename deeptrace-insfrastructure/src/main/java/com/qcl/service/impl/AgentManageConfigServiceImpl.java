@@ -104,4 +104,8 @@ public class AgentManageConfigServiceImpl implements AgentManageConfigService {
     }
 
 
+    @Override
+    public boolean deleteByParam(AgentManageConfig agentManageConfig){
+        return this.agentManageConfigDao.deleteByParam(agentManageConfig)>0;
+    }
 }

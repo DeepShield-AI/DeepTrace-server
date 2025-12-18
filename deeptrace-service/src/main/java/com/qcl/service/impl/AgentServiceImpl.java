@@ -87,8 +87,8 @@ public class AgentServiceImpl implements AgentService {
         //判断host_ip是否已被注册过
         Boolean hasRegister = agentManageConfigService.isHostIpExist(param.getHostIp(), AgentManageTypeEnum.REGISTER.getCode());
         if (hasRegister){
-            log.error(param.getHostIp()+ " 注册中，请10分钟后查看" + param);
-            return Result.error(param.getHostIp()+ " 注册中，请10分钟后查看");
+            log.error(param.getHostIp()+ " 注册中或已完成注册" + param);
+            return Result.error(param.getHostIp()+ " 注册中，请10分钟后启用");
         }
 
         //注册配置入库
@@ -111,7 +111,7 @@ public class AgentServiceImpl implements AgentService {
 
         // 使用HttpClientUtil发送POST请求
         try {
-            String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
+            String result = OkHttpUtil.postJson(url, paramMap);
             if (result == null ){
                 return Result.error("注册失败");
             }
@@ -236,6 +236,43 @@ public class AgentServiceImpl implements AgentService {
         paramMap.put("ssh_port", String.valueOf(param.getSshPort()));
         paramMap.put("agent_name", param.getAgentName());
 
+
+        //todo???采集器注册状态查询。未完成给提示用户10分钟后再试；注册失败给用户注册失败的原因（将注册的配置从数据表中同步删除）；注册成功支持用户进行下一步启用操作
+        try {
+            String registerResult = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
+            if (registerResult == null){
+                return Result.error("查询注册状态失败");
+            }
+            // 在解析响应前添加验证
+            if (!isValidJson(registerResult)) {
+                return Result.error("查询注册状态失败：" + registerResult);
+            }
+            // 解析响应
+            JSONObject jsonObject = JSON.parseObject(registerResult);
+            int code = jsonObject.getInteger("code");
+            String message = jsonObject.getString("message");
+
+            if (code != 200) {
+                log.error("查询注册状态失败: " + registerResult);
+                return Result.error("查询注册状态失败: " + message);
+            }
+
+            //todo???  未完成给提示用户10分钟后再试;
+
+            //todo???  注册失败给用户注册失败的原因;
+            //删除该采集的注册配置
+            AgentManageConfig agentManageConfig = new AgentManageConfig();
+            agentManageConfig.setType(AgentManageTypeEnum.REGISTER.getCode());
+            agentManageConfig.setHostIp(param.getHostIp());
+            agentManageConfig.setUserId(param.getUserId());
+            agentManageConfigService.deleteByParam(agentManageConfig);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
+
         // 使用HttpClientUtil发送POST请求
         try {
             String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
@@ -271,12 +308,6 @@ public class AgentServiceImpl implements AgentService {
     public Result<String> editAgentConfig(AgentParam param) {
         String url = Constants.AGENT_PROCESS_ADDR + "/sync_agent_config";
 
-        //将本次新增/修改的配置入库
-        AgentUserConfig agentUserConfig = new AgentUserConfig();
-        agentUserConfig.setUserId(param.getAgentInfo().getUserId());
-        agentUserConfig.setHostIp(param.getAgentInfo().getHostIp());
-        agentUserConfig.setAgentName(param.getAgentInfo().getAgentName());
-        agentUserConfig.setCreateTime(new Date());
 
         // 将实体参数转换为Map
         ObjectMapper mapper = new ObjectMapper();
@@ -286,8 +317,6 @@ public class AgentServiceImpl implements AgentService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        agentUserConfig.setConfig(jsonStr);
-        agentUserConfigService.insert(agentUserConfig);
 
 
         // 使用HttpClientUtil发送POST请求
@@ -309,6 +338,15 @@ public class AgentServiceImpl implements AgentService {
                 return Result.error("操作失败: " + message);
             }
 
+            //将本次新增/修改的配置入库
+            AgentUserConfig agentUserConfig = new AgentUserConfig();
+            agentUserConfig.setUserId(param.getAgentInfo().getUserId());
+            agentUserConfig.setHostIp(param.getAgentInfo().getHostIp());
+            agentUserConfig.setAgentName(param.getAgentInfo().getAgentName());
+            agentUserConfig.setCreateTime(new Date());
+            agentUserConfig.setConfig(jsonStr);
+            //根据hostIp配置，有则更新，无则新增
+            agentUserConfigService.insert(agentUserConfig);
 
             return Result.success(result);
         } catch (IOException e) {

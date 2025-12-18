@@ -67,4 +67,5 @@ public interface AgentManageConfigService {
      */
     List<AgentManageConfig> queryAll(AgentManageConfig agentManageConfig);
 
+    boolean deleteByParam(AgentManageConfig agentManageConfig);
 }

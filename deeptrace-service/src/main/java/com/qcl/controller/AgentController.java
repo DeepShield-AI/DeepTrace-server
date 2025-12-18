@@ -38,6 +38,12 @@ public class AgentController {
         return agentService.forwardGet(param);
     }
 
+    /**
+     * 采集器注册
+     * @param param
+     * @param principal
+     * @return
+     */
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     public Result<String> registerAgent(@Validated  @RequestBody AgentRegisterParam param, Principal principal) {
         try {
@@ -59,7 +65,12 @@ public class AgentController {
         }
     }
 
-
+    /**
+     * 采集器启用
+     * @param param
+     * @param principal
+     * @return
+     */
     @RequestMapping(value = "/enable", method = RequestMethod.POST)
     public Result<String> enable(@Validated @RequestBody AgentRegisterParam param, Principal principal) {
         try {
@@ -81,6 +92,12 @@ public class AgentController {
         }
     }
 
+    /**
+     * 采集器禁用
+     * @param param
+     * @param principal
+     * @return
+     */
     @RequestMapping(value = "/disable", method = RequestMethod.POST)
     public Result<String> disable(@Validated @RequestBody AgentRegisterParam param, Principal principal) {
         try {
@@ -102,6 +119,12 @@ public class AgentController {
         }
     }
 
+    /**
+     * 采集器删除（同步删除采集器配置）
+     * @param param
+     * @param principal
+     * @return
+     */
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public Result<String> delete( @Validated @RequestBody AgentRegisterParam param, Principal principal) {
         try {
@@ -122,6 +145,13 @@ public class AgentController {
             return Result.error(e.getMessage());
         }
     }
+
+    /**
+     * 查询采集器管理中相关配置（eg.采集器启用用户填写的信息）
+     * @param hostIp
+     * @param principal
+     * @return
+     */
     @RequestMapping(value = "/query_manage_config", method = RequestMethod.GET)
     public Result<List<AgentManageConfig>> queryManageConfig(@Validated @RequestParam String hostIp, Principal principal) {
         try {
@@ -146,6 +176,12 @@ public class AgentController {
         }
     }
 
+    /**
+     * 采集器配置 用户下发
+     * @param param
+     * @param principal
+     * @return
+     */
     @RequestMapping(value = "/edit_agent_config", method = RequestMethod.POST)
     public Result<String> editAgentConfig(@Validated @RequestBody AgentParam param, Principal principal) {
         try {
