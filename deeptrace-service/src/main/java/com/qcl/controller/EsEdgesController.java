@@ -3,7 +3,6 @@ package com.qcl.controller;
 import com.qcl.entity.Edges;
 import com.qcl.entity.EndpointProtocolStatsResult;
 import com.qcl.entity.param.QueryEdgeParam;
-import com.qcl.entity.param.QueryNodeParam;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.entity.statistic.TimeBucketResult;
 import com.qcl.service.EsEdgeService;
