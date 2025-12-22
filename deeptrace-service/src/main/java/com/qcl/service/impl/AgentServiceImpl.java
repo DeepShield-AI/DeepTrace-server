@@ -225,7 +225,6 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     public  Result<String>  enable(AgentRegisterParam param) {
-        String url = Constants.AGENT_PROCESS_ADDR + "/start_agent";
 
         // 将实体参数转换为Map
         Map<String, String> paramMap = new HashMap<>();
@@ -237,9 +236,10 @@ public class AgentServiceImpl implements AgentService {
         paramMap.put("agent_name", param.getAgentName());
 
 
-        //todo???采集器注册状态查询。未完成给提示用户10分钟后再试；注册失败给用户注册失败的原因（将注册的配置从数据表中同步删除）；注册成功支持用户进行下一步启用操作
+        //采集器注册状态查询。未完成给提示用户10分钟后再试；注册失败给用户注册失败的原因（将注册的配置从数据表中同步删除）；注册成功支持用户进行下一步启用操作
         try {
-            String registerResult = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
+            String url = Constants.AGENT_PROCESS_ADDR + "/check_agent_registration";
+            String registerResult = OkHttpUtil.postJson(url, paramMap);
             if (registerResult == null){
                 return Result.error("查询注册状态失败");
             }
@@ -252,20 +252,24 @@ public class AgentServiceImpl implements AgentService {
             int code = jsonObject.getInteger("code");
             String message = jsonObject.getString("message");
 
+            //注册失败给用户注册失败的原因;
             if (code != 200) {
-                log.error("查询注册状态失败: " + registerResult);
-                return Result.error("查询注册状态失败: " + message);
+                log.error("注册失败: " + registerResult);
+                //删除该采集的注册配置
+                AgentManageConfig agentManageConfig = new AgentManageConfig();
+                agentManageConfig.setType(AgentManageTypeEnum.REGISTER.getCode());
+                agentManageConfig.setHostIp(param.getHostIp());
+                agentManageConfig.setUserId(param.getUserId());
+                agentManageConfigService.deleteByParam(agentManageConfig);
+                return Result.error("注册失败: " + message);
             }
 
-            //todo???  未完成给提示用户10分钟后再试;
+            //未完成给提示用户10分钟后再试;
+            if (!JSONObject.parseObject(message).getBoolean("is_registered")){
+                return Result.error("注册还未完成，请用户10分钟后再试");
+            }
 
-            //todo???  注册失败给用户注册失败的原因;
-            //删除该采集的注册配置
-            AgentManageConfig agentManageConfig = new AgentManageConfig();
-            agentManageConfig.setType(AgentManageTypeEnum.REGISTER.getCode());
-            agentManageConfig.setHostIp(param.getHostIp());
-            agentManageConfig.setUserId(param.getUserId());
-            agentManageConfigService.deleteByParam(agentManageConfig);
+
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -273,8 +277,9 @@ public class AgentServiceImpl implements AgentService {
 
 
 
-        // 使用HttpClientUtil发送POST请求
+        //注册成功支持用户进行下一步启用操作
         try {
+            String url = Constants.AGENT_PROCESS_ADDR + "/start_agent";
             String result = OkHttpUtil.postJson(url, paramMap);//todo??? 接口需要返回json格式的结果，有错误码和错误信息
             if (result == null){
                 return Result.error("启用失败");
