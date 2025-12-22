@@ -30,6 +30,8 @@
         <fastjson>1.2.76</fastjson>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <!-- 添加Elasticsearch版本管理 -->
+        <elasticsearch.version>7.17.19</elasticsearch.version>
     </properties>
 
 

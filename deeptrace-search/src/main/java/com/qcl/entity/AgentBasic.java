@@ -102,8 +102,4 @@ public class AgentBasic implements Serializable {
 
     @Field(name = "vtap_group_name")
     private String vtapGroupName;
-
-    @Field(name = "user_id")
-    private String userId;
-
 }

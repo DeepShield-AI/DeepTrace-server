@@ -2,19 +2,16 @@ package com.qcl.service;
 
 import com.qcl.api.Result;
 import com.qcl.entity.param.AgentRegisterParam;
-import com.qcl.entity.param.agentconfig.AgentParam;
 
 public interface AgentService {
 
     Result<String> forwardGet(String param);
 
-    Result<String>  registerAgent(AgentRegisterParam param);
+    String registerAgent(AgentRegisterParam param);
 
-    Result<String>  delete(AgentRegisterParam param);
+    String delete(AgentRegisterParam param);
 
-    Result<String> disable(AgentRegisterParam param);
+    String disable(AgentRegisterParam param);
 
-    Result<String> enable(AgentRegisterParam param);
-
-    Result<String> editAgentConfig(AgentParam param);
+    String enable(AgentRegisterParam param);
 }
