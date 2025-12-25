@@ -106,4 +106,15 @@ public class AgentBasic implements Serializable {
     @Field(name = "user_id")
     private String userId;
 
+    @Field(name = "error_info")
+    private String errorInfo;
+
+    @Field(name = "license_functions")
+    private String licenseFunctions;
+
+    @Field(name = "synced_analyzer_at", type = FieldType.Date)
+    private String syncedAnalyzerAt;
+
+    @Field(name = "synced_controller_at", type = FieldType.Date)
+    private String syncedControllerAt;
 }

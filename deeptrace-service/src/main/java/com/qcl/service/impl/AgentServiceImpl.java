@@ -247,13 +247,15 @@ public class AgentServiceImpl implements AgentService {
             if (!isValidJson(registerResult)) {
                 return Result.error("查询注册状态失败：" + registerResult);
             }
+
             // 解析响应
             JSONObject jsonObject = JSON.parseObject(registerResult);
             int code = jsonObject.getInteger("code");
             String message = jsonObject.getString("message");
+            String data = jsonObject.getString("data");
 
             //注册失败给用户注册失败的原因;
-            if (code != 200) {
+            if (code == 404) {
                 log.error("注册失败: " + registerResult);
                 //删除该采集的注册配置
                 AgentManageConfig agentManageConfig = new AgentManageConfig();
@@ -261,11 +263,14 @@ public class AgentServiceImpl implements AgentService {
                 agentManageConfig.setHostIp(param.getHostIp());
                 agentManageConfig.setUserId(param.getUserId());
                 agentManageConfigService.deleteByParam(agentManageConfig);
-                return Result.error("注册失败: " + message);
+                return Result.error("注册失败: " + JSONObject.parseObject(data).getString("details"));
+            }else if (code != 200) {
+                log.error("查询注册状态失败: " + registerResult);
+                return Result.error("查询注册状态失败: " + message);
             }
 
             //未完成给提示用户10分钟后再试;
-            if (!JSONObject.parseObject(message).getBoolean("is_registered")){
+            if (!JSONObject.parseObject(data).getBoolean("is_registered")){
                 return Result.error("注册还未完成，请用户10分钟后再试");
             }
 
