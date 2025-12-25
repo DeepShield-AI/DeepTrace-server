@@ -160,6 +160,10 @@ public class Traces implements Serializable {
         @Field(name = "ebpf_tag")
         @JsonProperty("ebpf_tag")
         private EbpfTag ebpfTag;
+
+        @Field(name = "k8s_tag")
+        @JsonProperty("k8s_tag")
+        private EbpfTag k8sTag;
     }
 
     @Data
@@ -250,5 +254,9 @@ public class Traces implements Serializable {
         @Field(name = "tgid")
         @JsonProperty("tgid")
         private Long tgid;
+    }
+    @Data
+    public static class K8sTag implements Serializable {
+
     }
 }
