@@ -156,8 +156,4 @@ public class EsTraceController {
                 return ResponseEntity.badRequest().body("无效的搜索类型: " + type);
         }
     }
-
-
-
-
 }
