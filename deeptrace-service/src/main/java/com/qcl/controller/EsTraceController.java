@@ -2,12 +2,16 @@ package com.qcl.controller;
 
 import com.qcl.constants.TraceSearchTypeEnum;
 import com.qcl.entity.Traces;
+import com.qcl.entity.User;
+import com.qcl.entity.UserDTO;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.entity.statistic.TimeBucketResult;
+import com.qcl.service.UserService;
 import com.qcl.vo.PageResult;
 import com.qcl.service.EsTraceService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 //import java.util.List;
 //import java.util.Map;
+import java.security.Principal;
 import java.util.*;
 
 @Controller
@@ -26,14 +31,29 @@ public class EsTraceController {
 
     @Autowired
     private EsTraceService esTraceService;
+    @Autowired
+    private UserService userService;
 
     /**
      * 分页查询
+     * v2:支持用户筛选
      */
     @RequestMapping(value = "/queryByPage", method = RequestMethod.GET)
     // 使用 @ModelAttribute 自动绑定查询参数
-    public ResponseEntity<PageResult<Traces>> search(@ModelAttribute QueryTracesParam queryTracesParam) {
-        PageResult<Traces> result = esTraceService.queryByPageResult(queryTracesParam);
+    public ResponseEntity<?> search(@ModelAttribute QueryTracesParam queryTracesParam, Principal principal) {
+        //获取当前登录用户
+        String userName = principal.getName();
+        if (userName == null){
+            return ResponseEntity.badRequest().body("暂未登录或token已经过期");
+        }
+        User user = this.userService.queryByUsername(userName);
+        if (user == null ){
+            return  ResponseEntity.badRequest().body(userName+"该用户不存在");
+        }
+        UserDTO userDTO = new UserDTO();
+        BeanUtils.copyProperties(user,userDTO);
+
+        PageResult<Traces> result = esTraceService.queryByPageResult(queryTracesParam, userDTO);
         return ResponseEntity.ok(result);
     }
 
@@ -68,11 +88,27 @@ public class EsTraceController {
 
     /**
      * 统计查询
+     *  v2:支持用户筛选
      */
     @RequestMapping(value = "/statistic", method = RequestMethod.GET)
     // 使用 @ModelAttribute 自动绑定查询参数（内置Apifox不显示？
     public ResponseEntity<?> statistic(@ModelAttribute QueryTracesParam queryTracesParam,
-                                       @RequestParam(required = false) String type) {
+                                       @RequestParam(required = false) String type,
+                                       Principal principal) {
+
+        //获取当前登录用户
+        String userName = principal.getName();
+        if (userName == null){
+            return ResponseEntity.badRequest().body("暂未登录或token已经过期");
+        }
+        User user = this.userService.queryByUsername(userName);
+        if (user == null ){
+            return  ResponseEntity.badRequest().body(userName+"该用户不存在");
+        }
+        UserDTO userDTO = new UserDTO();
+        BeanUtils.copyProperties(user,userDTO);
+
+
         // 参数校验
         if (type == null || type.isEmpty()) {
             return ResponseEntity.badRequest().body("查询参数不能为空");
@@ -87,17 +123,17 @@ public class EsTraceController {
         switch (searchType) {
             case COUNT:
                 // 请求数时序统计
-                List<TimeBucketResult> countResult = esTraceService.getTraceCountByMinute(queryTracesParam);
+                List<TimeBucketResult> countResult = esTraceService.getTraceCountByMinute(queryTracesParam, userDTO);
                 return ResponseEntity.ok(countResult);
 
             case STATUSCOUNT:
                 // 状态码分组统计
-                List<StatusTimeBucketResult> statusResult = esTraceService.getStatusCountByMinute(queryTracesParam);
+                List<StatusTimeBucketResult> statusResult = esTraceService.getStatusCountByMinute(queryTracesParam, userDTO);
                 return ResponseEntity.ok(statusResult);
 
             case LATENCYSTATS:
                 // 延迟统计
-                List<LatencyTimeBucketResult> latencyResult = esTraceService.getLatencyStatsByMinute(queryTracesParam);
+                List<LatencyTimeBucketResult> latencyResult = esTraceService.getLatencyStatsByMinute(queryTracesParam, userDTO);
                 return ResponseEntity.ok(latencyResult);
 
             default:

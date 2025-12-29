@@ -49,4 +49,8 @@ public class QueryTracesParam {
     private String sortBy;
     /** 排序方式（desc或asc） */
     private String sortOrder;
+    /**
+     * 管理员查询XX用户的数据
+     */
+    private Long userId;
 }

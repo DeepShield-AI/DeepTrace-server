@@ -42,7 +42,7 @@ public enum TraceSearchTypeEnum {
      */
     public static TraceSearchTypeEnum fromCode(String code) {
         for (TraceSearchTypeEnum type : TraceSearchTypeEnum.values()) {
-            if (type.getCode().equals(code)) {
+            if (type.getCode().equalsIgnoreCase(code)) {
                 return type;
             }
         }

@@ -1,10 +1,10 @@
 package com.qcl.service;
 
 import com.qcl.entity.Traces;
+import com.qcl.entity.UserDTO;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
-import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.entity.statistic.TimeBucketResult;
 import com.qcl.vo.PageResult;
 
@@ -16,7 +16,7 @@ public interface EsTraceService {
     /**
      * 返回分页结果对象
      */
-    PageResult<Traces> queryByPageResult(QueryTracesParam param);
+    PageResult<Traces> queryByPageResult(QueryTracesParam param, UserDTO user);
     /**
      * 根据 Trace ID 查询单个 Trace 详情，返回分页结果对象（方便前端统一处理）
      */
@@ -33,15 +33,15 @@ public interface EsTraceService {
      * 按分钟统计 Trace 数量
      */
 //    List<TimeBucketCountResult> getTraceCountByMinute(QueryTracesParam queryTracesParam);
-    List<TimeBucketResult> getTraceCountByMinute(QueryTracesParam queryTracesParam);
+    List<TimeBucketResult> getTraceCountByMinute(QueryTracesParam queryTracesParam, UserDTO user);
     /**
      * 按分钟统计状态码分组数量
      */
-    List<StatusTimeBucketResult> getStatusCountByMinute(QueryTracesParam queryTracesParam);
+    List<StatusTimeBucketResult> getStatusCountByMinute(QueryTracesParam queryTracesParam, UserDTO user);
     /**
      * 按分钟统计延迟分布
      */
-    List<LatencyTimeBucketResult> getLatencyStatsByMinute(QueryTracesParam queryTracesParam);
+    List<LatencyTimeBucketResult> getLatencyStatsByMinute(QueryTracesParam queryTracesParam, UserDTO user);
 }
 
 

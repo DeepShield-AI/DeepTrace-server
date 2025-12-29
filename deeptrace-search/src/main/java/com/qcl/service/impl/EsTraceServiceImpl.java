@@ -2,17 +2,16 @@ package com.qcl.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.SortOptions;
-import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.entity.Traces;
+import com.qcl.entity.UserDTO;
 import com.qcl.entity.param.QueryTracesParam;
-import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.entity.statistic.*;
 import com.qcl.service.EsTraceService;
+import com.qcl.utils.IndexNameResolver;
 import com.qcl.vo.PageResult;
 import com.qcl.utils.EsAggregationHelper;
 import lombok.RequiredArgsConstructor;
@@ -40,16 +39,19 @@ public class EsTraceServiceImpl implements EsTraceService {
 
     /**
      * 请求数时序统计
+     *
      * @param queryTracesParam 筛选条件
+     * @param user
      */
-    public List<TimeBucketResult> getTraceCountByMinute(QueryTracesParam queryTracesParam) {
+    public List<TimeBucketResult> getTraceCountByMinute(QueryTracesParam queryTracesParam, UserDTO user) {
         try {
             // 1. 构建查询条件
             Query query = buildQuery(queryTracesParam);
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -87,17 +89,20 @@ public class EsTraceServiceImpl implements EsTraceService {
 
     /**
      * 错误数量时序统计，按状态码分组并统计每分钟请求数
+     *
      * @param queryTracesParam 筛选条件
+     * @param user
      * @return 状态码分组的时序统计数据
      */
-    public List<StatusTimeBucketResult> getStatusCountByMinute(QueryTracesParam queryTracesParam) {
+    public List<StatusTimeBucketResult> getStatusCountByMinute(QueryTracesParam queryTracesParam, UserDTO user) {
         try {
             // 1. 构建查询条件
             Query query = buildQuery(queryTracesParam);
 
             // 2. 构建嵌套聚合查询
+            String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("status_groups", a -> a
@@ -155,17 +160,20 @@ public class EsTraceServiceImpl implements EsTraceService {
 
     /**
      * 获取每分钟的延迟统计信息（平均延迟、75th、90th、99th 百分位延迟）
+     *
      * @param queryTracesParam 筛选条件
+     * @param user
      * @return 延迟统计的时序数据
      */
-    public List<LatencyTimeBucketResult> getLatencyStatsByMinute(QueryTracesParam queryTracesParam) {
+    public List<LatencyTimeBucketResult> getLatencyStatsByMinute(QueryTracesParam queryTracesParam, UserDTO user) {
         try {
             // 1. 构建查询条件
             Query query = buildQuery(queryTracesParam);
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -303,11 +311,13 @@ public class EsTraceServiceImpl implements EsTraceService {
 
     /**
      * 分页查询
-     * @param queryTracesParam  查询参数
+     *
+     * @param queryTracesParam 查询参数
+     * @param user
      * @return 分页结果对象，包含 Trace 列表和所有筛选项（endpoint、protocol、status_code）
      */
     @Override
-    public PageResult<Traces> queryByPageResult(QueryTracesParam queryTracesParam ) {
+    public PageResult<Traces> queryByPageResult(QueryTracesParam queryTracesParam, UserDTO user) {
         try {
             // 1. 构建查询条件
             Query finalQuery = buildQuery(queryTracesParam);
@@ -318,8 +328,9 @@ public class EsTraceServiceImpl implements EsTraceService {
             int from = pageNum * pageSize;   // 默认从0开始
 
             // 2.执行查询
+            String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces") //todo??? 数据与用户绑定
+                            .index(index)
                             .query(finalQuery)
                             .from(from)
                             .size(pageSize)  // 使用动态pageSize而非硬编码50
