@@ -11,12 +11,13 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.qcl.entity.EndpointProtocolStatsResult;
 import com.qcl.entity.Nodes;
 import com.qcl.entity.Traces;
+import com.qcl.entity.UserDTO;
 import com.qcl.entity.param.QueryNodeParam;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
-import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.entity.statistic.TimeBucketResult;
 import com.qcl.exception.BizException;
 import com.qcl.service.EsNodeService;
+import com.qcl.utils.IndexNameResolver;
 import com.qcl.vo.PageResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.annotation.Backoff;
@@ -44,7 +45,7 @@ public class EsNodeServiceImpl implements EsNodeService {
             maxAttempts = 5,
             backoff = @Backoff(delay = 100, multiplier = 2))
     @Override
-    public List<TimeBucketResult> qpsByMinute(QueryNodeParam queryNodeParam) {
+    public List<TimeBucketResult> qpsByMinute(QueryNodeParam queryNodeParam, UserDTO user) {
 
         if(queryNodeParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -62,8 +63,9 @@ public class EsNodeServiceImpl implements EsNodeService {
             Query query = buildQuery(queryNodeParam);
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -107,7 +109,7 @@ public class EsNodeServiceImpl implements EsNodeService {
             maxAttempts = 5,
             backoff = @Backoff(delay = 100, multiplier = 2))
     @Override
-    public List<TimeBucketResult> errorRateByMinute(QueryNodeParam queryNodeParam) {
+    public List<TimeBucketResult> errorRateByMinute(QueryNodeParam queryNodeParam, UserDTO user) {
 
         if(queryNodeParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -125,8 +127,9 @@ public class EsNodeServiceImpl implements EsNodeService {
             Query query = buildQuery(queryNodeParam);
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -200,7 +203,7 @@ public class EsNodeServiceImpl implements EsNodeService {
             maxAttempts = 5,
             backoff = @Backoff(delay = 100, multiplier = 2))
     @Override
-    public List<TimeBucketResult> latencyStatsByMinute(QueryNodeParam queryNodeParam) {
+    public List<TimeBucketResult> latencyStatsByMinute(QueryNodeParam queryNodeParam, UserDTO user) {
 
         if(queryNodeParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -218,8 +221,9 @@ public class EsNodeServiceImpl implements EsNodeService {
             Query query = buildQuery(queryNodeParam);
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes")  //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -273,7 +277,7 @@ public class EsNodeServiceImpl implements EsNodeService {
             maxAttempts = 5,
             backoff = @Backoff(delay = 100, multiplier = 2))
     @Override
-    public List<StatusTimeBucketResult> getStatusCountByMinute(QueryNodeParam queryNodeParam){
+    public List<StatusTimeBucketResult> getStatusCountByMinute(QueryNodeParam queryNodeParam, UserDTO user){
 
         if(queryNodeParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -292,8 +296,9 @@ public class EsNodeServiceImpl implements EsNodeService {
             Query query = buildQuery(queryNodeParam);
 
             // 2. 构建嵌套聚合查询
+            String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("status_groups", a -> a
@@ -357,7 +362,7 @@ public class EsNodeServiceImpl implements EsNodeService {
             backoff = @Backoff(delay = 100, multiplier = 2)
     )
     @Override
-    public PageResult<Nodes> queryByPage(QueryNodeParam queryNodeParam) {
+    public PageResult<Nodes> queryByPage(QueryNodeParam queryNodeParam, UserDTO user) {
         if(queryNodeParam.getStartTime() == null){
             throw new BizException("startTime is required");
         }
@@ -403,8 +408,9 @@ public class EsNodeServiceImpl implements EsNodeService {
             int from = (pageNo - 1) * pageSize;
 
             // 5. 执行查询
+            String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes") //todo??? 数据与用户绑定
+                            .index(index)
                             .query(finalQuery)
                             .from(from)
                             .size(pageSize)
@@ -454,7 +460,7 @@ public class EsNodeServiceImpl implements EsNodeService {
      * @param queryTracesParam 筛选条件
      * @return 端点和协议分组统计结果
      */
-    public List<EndpointProtocolStatsResult> getEndpointProtocolStats(QueryNodeParam queryNodeParam) {
+    public List<EndpointProtocolStatsResult> getEndpointProtocolStats(QueryNodeParam queryNodeParam, UserDTO user) {
 
         if(queryNodeParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -473,8 +479,9 @@ public class EsNodeServiceImpl implements EsNodeService {
             Query query = buildQuery(queryNodeParam);
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("nodes") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("group_by_endpoint_protocol", a -> a
