@@ -1,16 +1,24 @@
 package com.qcl.controller;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qcl.constants.AgentManageTypeEnum;
 import com.qcl.constants.TraceSearchTypeEnum;
-import com.qcl.entity.Traces;
-import com.qcl.entity.User;
-import com.qcl.entity.UserDTO;
+import com.qcl.entity.*;
 import com.qcl.entity.param.QueryTracesParam;
 import com.qcl.entity.statistic.LatencyTimeBucketResult;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
 import com.qcl.entity.statistic.TimeBucketResult;
+import com.qcl.service.AgentManageConfigService;
 import com.qcl.service.UserService;
+import com.qcl.utils.AgentUtil;
+import com.qcl.utils.JsonUtil;
+import com.qcl.utils.OkHttpUtil;
 import com.qcl.vo.PageResult;
 import com.qcl.service.EsTraceService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,11 +28,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
-//import java.util.List;
-//import java.util.Map;
 import java.security.Principal;
 import java.util.*;
 
+@Slf4j
 @Controller
 @RequestMapping("/api/esTraces")
 public class EsTraceController {
@@ -33,6 +40,8 @@ public class EsTraceController {
     private EsTraceService esTraceService;
     @Autowired
     private UserService userService;
+    @Autowired
+    private AgentManageConfigService agentManageConfigService;
 
     /**
      * 分页查询
@@ -52,6 +61,10 @@ public class EsTraceController {
         }
         UserDTO userDTO = new UserDTO();
         BeanUtils.copyProperties(user,userDTO);
+
+        //同步当前用户的采集器列表的traces nodes edges
+        List<AgentManageConfigDTO> agents = AgentUtil.queryAllAgent(agentManageConfigService,user.getUserId());
+        AgentUtil.syncData(agents);
 
         PageResult<Traces> result = esTraceService.queryByPageResult(queryTracesParam, userDTO);
         return ResponseEntity.ok(result);
@@ -108,6 +121,9 @@ public class EsTraceController {
         UserDTO userDTO = new UserDTO();
         BeanUtils.copyProperties(user,userDTO);
 
+        //同步当前用户的采集器列表的traces nodes edges
+        List<AgentManageConfigDTO> agents = AgentUtil.queryAllAgent(agentManageConfigService,user.getUserId());
+        AgentUtil.syncData(agents);
 
         // 参数校验
         if (type == null || type.isEmpty()) {

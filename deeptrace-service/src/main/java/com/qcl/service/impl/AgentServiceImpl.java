@@ -14,6 +14,7 @@ import com.qcl.service.AgentService;
 import com.qcl.service.AgentUserConfigService;
 import com.qcl.service.UserService;
 import com.qcl.utils.Constants;
+import com.qcl.utils.JsonUtil;
 import com.qcl.utils.OkHttpUtil;
 import com.qcl.api.Result;
 import lombok.extern.slf4j.Slf4j;
@@ -116,7 +117,7 @@ public class AgentServiceImpl implements AgentService {
                 return Result.error("注册失败");
             }
             // 在解析响应前添加验证
-            if (!isValidJson(result)) {
+            if (!JsonUtil.isValidJson(result)) {
                 return Result.error("注册失败：" + result);
             }
             // 解析响应
@@ -156,7 +157,7 @@ public class AgentServiceImpl implements AgentService {
                 return Result.error("删除失败");
             }
             // 在解析响应前添加验证
-            if (!isValidJson(result)) {
+            if (!JsonUtil.isValidJson(result)) {
                 return Result.error("删除失败：" + result);
             }
             // 解析响应
@@ -197,7 +198,7 @@ public class AgentServiceImpl implements AgentService {
                 return Result.error("禁用失败");
             }
             // 在解析响应前添加验证
-            if (!isValidJson(result)) {
+            if (!JsonUtil.isValidJson(result)) {
                 return Result.error("禁用失败：" + result);
             }
             // 解析响应
@@ -244,7 +245,7 @@ public class AgentServiceImpl implements AgentService {
                 return Result.error("查询注册状态失败");
             }
             // 在解析响应前添加验证
-            if (!isValidJson(registerResult)) {
+            if (!JsonUtil.isValidJson(registerResult)) {
                 return Result.error("查询注册状态失败：" + registerResult);
             }
 
@@ -290,7 +291,7 @@ public class AgentServiceImpl implements AgentService {
                 return Result.error("启用失败");
             }
             // 在解析响应前添加验证
-            if (!isValidJson(result)) {
+            if (!JsonUtil.isValidJson(result)) {
                 return Result.error("启用失败：" + result);
             }
             // 解析响应
@@ -336,7 +337,7 @@ public class AgentServiceImpl implements AgentService {
                 return Result.error("配置下发失败");
             }
             // 在解析响应前添加验证
-            if (!isValidJson(result)) {
+            if (!JsonUtil.isValidJson(result)) {
                 return Result.error("配置下发失败：" + result);
             }
             // 解析响应
@@ -365,22 +366,5 @@ public class AgentServiceImpl implements AgentService {
     }
 
 
-
-    /**
-     * 判断字符串是否为有效的JSON格式
-     * @param str 待验证的字符串
-     * @return 是否为JSON格式
-     */
-    private boolean isValidJson(String str) {
-        if (str == null || str.trim().isEmpty()) {
-            return false;
-        }
-        try {
-            JSON.parseObject(str);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
 
 }
