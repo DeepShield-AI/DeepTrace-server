@@ -16,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -122,3 +124,50 @@ public class SimpleTest {
         }
     }
 }
+
+/**
+ * 测试无token访问受保护API（应失败）
+ */
+//@Test
+//public void testProtectedApiWithoutToken() {
+//    System.out.println("=== 测试无token访问受保护API（预期失败） ===");
+//
+//    String apiUrl = String.format("http://%s:%d%s/queryByPage?pageNum=%d&pageSize=%d",
+//            REMOTE_SERVER_HOST, REMOTE_SERVER_PORT, TRACE_API_BASE_PATH, 1, 10);
+//
+//    System.out.println("API URL: " + apiUrl);
+//
+//    try {
+//        // 创建不带认证头的请求
+//        HttpEntity<?> requestEntity = new HttpEntity<>(createHeaders());
+//
+//        ResponseEntity<Map> response = restTemplate.exchange(
+//                apiUrl,
+//                HttpMethod.GET,
+//                requestEntity,
+//                Map.class
+//        );
+//
+//        // 输出响应状态信息
+//        System.out.println("响应状态码: " + response.getStatusCodeValue());
+//        System.out.println("响应体: " + response.getBody());
+//
+//        // 验证响应状态应为401（未授权）
+//        assertEquals(401, response.getStatusCodeValue(),
+//                "无token的API调用应返回401状态码，实际状态码: " + response.getStatusCodeValue());
+//
+//        Map<String, Object> responseBody = response.getBody();
+//        if (responseBody != null) {
+//            assertNotNull(responseBody.get("code"), "响应应包含code字段");
+//            assertEquals(401, responseBody.get("code"),
+//                    "无token的API调用应返回401状态码，实际code: " + responseBody.get("code"));
+//        }
+//
+//        System.out.println("✅ 无token的API调用正确返回401错误!");
+//
+//    } catch (Exception e) {
+//        System.err.println("❌ 无token的API调用异常: " + e.getMessage());
+//        // 对于无token的情况，异常也是预期的结果
+//        System.out.println("✅ 无token的API调用正确抛出异常!");
+//    }
+//}
