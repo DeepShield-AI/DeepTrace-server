@@ -58,41 +58,36 @@ public class AgentUtil {
             return;
         }
 
+        AgentManageConfigDTO agent = agents.get(0);
         ObjectMapper mapper = new ObjectMapper();
-        for (AgentManageConfigDTO agent : agents) {
-            String jsonStr = null;
-            try {
-                jsonStr = mapper.writeValueAsString(agent);
-            } catch (JsonProcessingException e) {
-                log.error("同步数据失败，请求参数转换阶段 agentInfo = {}", jsonStr, e);
-                continue;
+        String jsonStr = null;
+        try {
+            jsonStr = mapper.writeValueAsString(agent);
+        } catch (JsonProcessingException e) {
+            log.error("同步数据失败，请求参数转换阶段 agentInfo = {}", jsonStr, e);
+        }
+
+        try {
+            String result = OkHttpUtil.postJson(url, jsonStr);
+            if (result == null) {
+                log.error("同步数据失败，请求响应阶段 agentInfo = {}", jsonStr);
             }
 
-            try {
-                String result = OkHttpUtil.postJson(url, jsonStr);
-                if (result == null) {
-                    log.error("同步数据失败，请求响应阶段 agentInfo = {}", jsonStr);
-                    continue;
-                }
-
-                // 在解析响应前添加验证
-                if (!JsonUtil.isValidJson(result)) {
-                    log.error("同步数据失败，解析响应阶段 agentInfo = {}", jsonStr);
-                    continue;
-                }
-
-                // 解析响应
-                com.alibaba.fastjson.JSONObject jsonObject = com.alibaba.fastjson.JSON.parseObject(result);
-                int code = jsonObject.getInteger("code");
-
-                if (code != 200) {
-                    log.error("同步数据失败，响应结果错误，response={}， agentInfo = {}", result, jsonStr);
-                    continue;
-                }
-
-            } catch (IOException e) {
-                log.error("同步数据异常 agentInfo = {}", jsonStr, e);
+            // 在解析响应前添加验证
+            if (!JsonUtil.isValidJson(result)) {
+                log.error("同步数据失败，解析响应阶段 agentInfo = {}", jsonStr);
             }
+
+            // 解析响应
+            com.alibaba.fastjson.JSONObject jsonObject = com.alibaba.fastjson.JSON.parseObject(result);
+            int code = jsonObject.getInteger("code");
+
+            if (code != 200) {
+                log.error("同步数据失败，响应结果错误，response={}， agentInfo = {}", result, jsonStr);
+            }
+
+        } catch (IOException e) {
+            log.error("同步数据异常 agentInfo = {}", jsonStr, e);
         }
     }
 }
