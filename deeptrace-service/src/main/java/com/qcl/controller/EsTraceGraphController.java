@@ -3,6 +3,7 @@ package com.qcl.controller;
 import com.qcl.entity.graph.EdgeStatsResult;
 import com.qcl.entity.graph.NodeStatsResult;
 import com.qcl.entity.param.QueryTracesParam;
+import com.qcl.service.AgentManageConfigService;
 import com.qcl.service.EsTraceGraphService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,14 +21,34 @@ public class EsTraceGraphController {
 
     @Autowired
     private EsTraceGraphService esTraceGraphService;
+    @Autowired
+    private AgentManageConfigService agentManageConfigService;
 
+
+    /**
+     * 调用链拓扑图-- 节点及其指标
+     * @param queryTracesParam
+     * @return
+     */
     @RequestMapping(value = "/nodes", method = RequestMethod.GET)
     public ResponseEntity<List<NodeStatsResult>> getContainerStats(QueryTracesParam queryTracesParam) {
+
+        //todo??? 同步当前用户的采集器列表的traces nodes edges
+
         List<NodeStatsResult> nodes = esTraceGraphService.getNodesStats(queryTracesParam);
         return ResponseEntity.ok(nodes);
     }
+
+    /**
+     * 调用链拓扑图-- 边及其指标
+     * @param queryTracesParam
+     * @return
+     */
     @RequestMapping(value = "/edges", method = RequestMethod.GET)
     public ResponseEntity<Map<String,List<EdgeStatsResult>>> getEdgesStats(QueryTracesParam queryTracesParam) {
+
+        //todo??? 同步当前用户的采集器列表的traces nodes edges
+
         List<EdgeStatsResult> edges = esTraceGraphService.getEdgesStats(queryTracesParam);
         Map<String, List<EdgeStatsResult>> result = edges.stream()
                 .collect(Collectors.groupingBy(EdgeStatsResult::getSrcNodeId));
