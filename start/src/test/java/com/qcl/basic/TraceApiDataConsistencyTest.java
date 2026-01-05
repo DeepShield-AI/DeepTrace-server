@@ -133,9 +133,11 @@ public class TraceApiDataConsistencyTest {
             System.out.println("响应状态码: " + response.getStatusCodeValue());
             System.out.println("响应体: " + response.getBody());
 
-            // 无token访问应返回401或403
-            assertTrue(response.getStatusCode().value() == 401 || response.getStatusCode().value() == 403,
-                    "无token访问应返回401或403状态码");
+            int statusCode = response.getStatusCodeValue();
+
+            // 更清晰的断言信息
+            assertTrue(statusCode == 401 || statusCode == 403,
+                    String.format("安全漏洞：无token访问应返回401或403状态码，但实际返回: %d。请检查认证机制！", statusCode));
 
             System.out.println("✅ 无token访问被正确拒绝!");
 
