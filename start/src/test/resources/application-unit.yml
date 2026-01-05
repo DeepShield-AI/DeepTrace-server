@@ -1,0 +1,11 @@
+# 单元测试配置
+spring:
+  profiles:
+    active: unit-test
+  main:
+    banner-mode: off
+
+logging:
+  level:
+    com.qcl: INFO
+    org.springframework: WARN
