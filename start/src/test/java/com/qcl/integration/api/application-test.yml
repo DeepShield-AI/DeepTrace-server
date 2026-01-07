@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  elasticsearch:
+    uris: http://localhost:9200
+    index-prefix: test-
+    
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+logging:
+  level:
+    com.qcl: DEBUG
+    org.springframework.security: DEBUG
+
+test:
+  es:
+    cleanup-on-exit: true
+    index-auto-create: true
+  security:
+    test-user:
+      username: test@example.com
+      password: test123
+      roles: USER,ADMIN

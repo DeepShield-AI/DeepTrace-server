@@ -1,4 +1,4 @@
-package com.qcl.es;
+package com.qcl.integration.api;
 
 public class EsNodeQueryTest {
 }

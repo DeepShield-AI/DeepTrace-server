@@ -1,0 +1,30 @@
+# D:\pj\Experiment_Platform\DeepTrace-server\start\src\test\resources\application-test.yml
+spring:
+  main:
+    banner-mode: off
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  elasticsearch:
+    uris: http://localhost:9200
+    connection-timeout: 1s
+    socket-timeout: 30s
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+logging:
+  level:
+    com.qcl: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+
+test:
+  timeout:
+    unit: 5000
+    integration: 30000

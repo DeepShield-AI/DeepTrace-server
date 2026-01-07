@@ -1,4 +1,4 @@
-package com.qcl.user;
+package com.qcl.integration.api;
 
 import com.qcl.util.TokenUtil;
 import org.junit.jupiter.api.Test;

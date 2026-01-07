@@ -1,4 +1,4 @@
-package com.qcl.basic;
+package com.qcl.integration.api;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.qcl.entity.Traces;
@@ -15,8 +15,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
