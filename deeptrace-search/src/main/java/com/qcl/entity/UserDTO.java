@@ -1,7 +1,9 @@
 package com.qcl.entity;
 
 import lombok.Data;
+import lombok.ToString;
 
+@ToString
 @Data
 public class UserDTO {
     /**

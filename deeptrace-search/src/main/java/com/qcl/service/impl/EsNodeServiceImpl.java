@@ -20,6 +20,7 @@ import com.qcl.service.EsNodeService;
 import com.qcl.utils.IndexNameResolver;
 import com.qcl.vo.PageResult;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EsNodeServiceImpl implements EsNodeService {
@@ -64,6 +66,8 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
+            log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
+
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -128,6 +132,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
+            log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -222,6 +227,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
+            log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -297,6 +303,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 2. 构建嵌套聚合查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
+            log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -409,6 +416,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 5. 执行查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
+            log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .query(finalQuery)
@@ -480,6 +488,7 @@ public class EsNodeServiceImpl implements EsNodeService {
 
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
+            log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档

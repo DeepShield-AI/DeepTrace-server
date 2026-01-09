@@ -147,7 +147,7 @@ public class AgentController {
     }
 
     /**
-     * 查询采集器管理中相关配置（eg.采集器启用用户填写的信息）
+     * 查询采集器管理中相关配置（eg.采集器启用用户填写的信息），采集器设备中小按钮使用
      * @param hostIp
      * @param principal
      * @return
@@ -171,7 +171,7 @@ public class AgentController {
 
             return Result.success(result);
         } catch (Exception e) {
-            log.error("采集器删除异常",e);
+            log.error("采集器操作配置查询异常",e);
             return Result.error(e.getMessage());
         }
     }

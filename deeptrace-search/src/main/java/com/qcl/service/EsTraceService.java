@@ -24,7 +24,7 @@ public interface EsTraceService {
     /**
      * 获取所有可用的筛选项
      */
-    Map<String, List<String>> getAllFilterOptions();
+    Map<String, List<String>> getAllFilterOptions(Long userId,UserDTO user);
     /**
      * 滚动查询 Trace 列表
      */
