@@ -2,7 +2,7 @@ package com.qcl.integration.api;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.qcl.entity.Traces;
-import com.qcl.util.TokenUtil;
+import com.qcl.unit.util.TokenUtil;
 import com.qcl.vo.PageResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package com.qcl.config;
+package com.qcl.integration.config;
 
 /**
  * 测试配置常量类

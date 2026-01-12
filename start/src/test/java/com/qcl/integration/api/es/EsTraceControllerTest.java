@@ -1,6 +1,6 @@
 package com.qcl.integration.api.es;
 
-import com.qcl.util.TokenUtil;
+import com.qcl.unit.util.TokenUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,7 +18,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * EsTraceController 增强版集成测试
+ * EsTraceController 集成测试
  * 包含参数验证、业务逻辑测试、边界条件测试等
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)

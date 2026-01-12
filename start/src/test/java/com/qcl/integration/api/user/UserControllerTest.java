@@ -4,6 +4,8 @@ import org.springframework.http.HttpHeaders;
 import com.qcl.api.Result;
 import com.qcl.entity.param.UserLoginParam;
 import com.qcl.entity.param.UserParam;
+import com.qcl.base.TestConstants;
+import com.qcl.base.TestDataFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,49 +40,57 @@ public class UserControllerTest {
     public void testUserRegistrationIntegration() {
         System.out.println("=== 用户注册功能验证 ===");
 
-        // 1. 生成唯一测试用户
-        String timestamp = String.valueOf(System.currentTimeMillis());
-        String testUsername = "testuser_" + timestamp;
-        String testPassword = "Test123456";
-        String testPhone = "13812345678";
-        String testEmail = "test_" + timestamp + "@example.com";
+        try {
+            // 1. 创建测试用户参数
+            UserParam userParam = TestDataFactory.createTestUserParam();
 
-        UserParam userParam = new UserParam();
-        userParam.setUsername(testUsername);
-        userParam.setPassword(testPassword);
-        userParam.setPhone(testPhone);
-        userParam.setEmail(testEmail);
+            System.out.println("📋 注册测试数据: 用户名=" + userParam.getUsername() +
+                    ", 手机号=" + userParam.getPhone() +
+                    ", 邮箱=" + userParam.getEmail());
 
-        System.out.println("📋 注册测试数据: 用户名=" + testUsername + ", 邮箱=" + testEmail);
+            // 2. 执行注册请求
+            String registerUrl = getBaseUrl() + TestConstants.API_PREFIX + TestConstants.REGISTER_PATH;
+            HttpEntity<UserParam> request = new HttpEntity<>(userParam);
 
-        // 2. 执行注册请求
-        String registerUrl = getBaseUrl() + "/api/user/register";
-        HttpEntity<UserParam> request = new HttpEntity<>(userParam);
+            ResponseEntity<Result> response = restTemplate.exchange(
+                    registerUrl,
+                    HttpMethod.POST,
+                    request,
+                    Result.class
+            );
 
-        ResponseEntity<Result> response = restTemplate.exchange(
-                registerUrl,
-                HttpMethod.POST,
-                request,
-                Result.class
-        );
+            // 3. 验证注册结果
+            assertTrue(response.getStatusCode().is2xxSuccessful(), "注册HTTP状态码应为2xx");
+            Result result = response.getBody();
+            assertNotNull(result, "注册响应体不应为null");
 
-        // 3. 验证注册结果
-        assertTrue(response.getStatusCode().is2xxSuccessful(), "注册HTTP状态码应为2xx");
-        Result result = response.getBody();
-        assertNotNull(result, "注册响应体不应为null");
-        assertEquals(200, result.getCode(), "注册业务状态码应为200");
-        assertNotNull(result.getData(), "注册成功应返回用户数据");
+            // 如果是500错误，先打印详细信息再断言
+            if (result.getCode() == 500) {
+                System.out.println("❌ 服务器内部错误，详细信息:");
+                System.out.println("   消息: " + result.getMessage());
+                System.out.println("   数据: " + result.getData());
+                fail("注册失败，服务器返回500错误: " + result.getMessage());
+            }
 
-        // 4. 修复ClassCastException：直接从Map中提取字段验证
-        Map<String, Object> userData = (Map<String, Object>) result.getData();
-        assertNotNull(userData.get("userId"), "注册用户应有ID");
-        assertEquals(testUsername, userData.get("username"), "用户名应匹配");
-        assertEquals(testEmail, userData.get("email"), "邮箱应匹配");
-        assertNotNull(userData.get("role"), "注册用户应有角色");
+            assertEquals(TestConstants.SUCCESS_CODE, result.getCode(), "注册业务状态码应为" + TestConstants.SUCCESS_CODE);
+            assertNotNull(result.getData(), "注册成功应返回用户数据");
 
-        System.out.println("✅ 用户注册验证通过 - 用户ID: " + userData.get("userId"));
-        System.out.println("✅ 用户角色: " + userData.get("role"));
-        System.out.println("🎯 注册功能验证完成");
+            // 4. 验证用户数据
+            Map<String, Object> userData = (Map<String, Object>) result.getData();
+            assertNotNull(userData.get("userId"), "注册用户应有ID");
+            assertEquals(userParam.getUsername(), userData.get("username"), "用户名应匹配");
+            assertEquals(userParam.getEmail(), userData.get("email"), "邮箱应匹配");
+            assertNotNull(userData.get("role"), "注册用户应有角色");
+
+            System.out.println("✅ 用户注册验证通过 - 用户ID: " + userData.get("userId"));
+            System.out.println("✅ 用户角色: " + userData.get("role"));
+            System.out.println("🎯 注册功能验证完成");
+
+        } catch (Exception e) {
+            System.out.println("❌ 注册测试发生异常: " + e.getMessage());
+            e.printStackTrace();
+            fail("注册测试失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -90,15 +100,15 @@ public class UserControllerTest {
     public void testUserLoginIntegration() {
         System.out.println("=== 用户登录功能验证 ===");
 
-        // 1. 准备登录参数
+        // 1. 登录参数（user-tian）
         UserLoginParam loginParam = new UserLoginParam();
-        loginParam.setUsername("tian");
-        loginParam.setPassword("t4139567");
+        loginParam.setUsername(TestConstants.TEST_USERNAME);  // 使用常量
+        loginParam.setPassword(TestConstants.TEST_PASSWORD);  // 使用常量
 
         System.out.println("📋 登录测试数据: 用户名=" + loginParam.getUsername());
 
-        // 2. 执行登录请求
-        String loginUrl = getBaseUrl() + "/api/user/login";
+        // 2. 执行登录请求 - 常量构建URL
+        String loginUrl = getBaseUrl() + TestConstants.API_PREFIX + TestConstants.LOGIN_PATH;
         HttpEntity<UserLoginParam> loginRequest = new HttpEntity<>(loginParam);
 
         ResponseEntity<Result> loginResponse = restTemplate.exchange(
@@ -108,11 +118,11 @@ public class UserControllerTest {
                 Result.class
         );
 
-        // 3. 验证登录结果
+        // 3. 验证登录结果 - 2xx
         assertTrue(loginResponse.getStatusCode().is2xxSuccessful(), "登录HTTP状态码应为2xx");
         Result loginResult = loginResponse.getBody();
         assertNotNull(loginResult, "登录响应体不应为null");
-        assertEquals(200, loginResult.getCode(), "登录业务状态码应为200");
+        assertEquals(TestConstants.SUCCESS_CODE, loginResult.getCode(), "登录业务状态码应为" + TestConstants.SUCCESS_CODE);
         assertNotNull(loginResult.getData(), "登录成功应返回用户数据");
 
         // 4. 验证返回的数据结构
@@ -132,7 +142,7 @@ public class UserControllerTest {
         System.out.println("✅ tokenHead: " + tokenHead);
         System.out.println("✅ token长度: " + (token != null ? token.length() : "null"));
 
-        // 验证用户信息字段（可选，如果存在则验证）
+        // 验证用户信息字段（可选，if存在则验证）
         if (loginData.containsKey("userId")) {
             assertNotNull(loginData.get("userId"), "如果存在userId字段，则不应为null");
             System.out.println("✅ 用户ID: " + loginData.get("userId"));
@@ -163,26 +173,26 @@ public class UserControllerTest {
         headers.set("Authorization", authorizationHeader);
         HttpEntity<?> request = new HttpEntity<>(headers);
 
-        // 尝试访问用户信息接口（如果存在）
-        try {
-            String userInfoUrl = getBaseUrl() + "/api/user/info";
-            ResponseEntity<Result> userInfoResponse = restTemplate.exchange(
-                    userInfoUrl,
-                    HttpMethod.GET,
-                    request,
-                    Result.class
-            );
-
-            // 如果接口存在且返回成功，说明token有效
-            if (userInfoResponse.getStatusCode().is2xxSuccessful()) {
-                Result userInfoResult = userInfoResponse.getBody();
-                if (userInfoResult != null && userInfoResult.getCode() == 200) {
-                    System.out.println("✅ Token验证通过 - 可以正常访问受保护接口");
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("⚠️ 用户信息接口可能不存在，但token格式正确");
-        }
+//        // 尝试访问用户信息接口（？未来）
+//        try {
+//            String userInfoUrl = getBaseUrl() + TestConstants.API_PREFIX + "/user/info";
+//            ResponseEntity<Result> userInfoResponse = restTemplate.exchange(
+//                    userInfoUrl,
+//                    HttpMethod.GET,
+//                    request,
+//                    Result.class
+//            );
+//
+//            // 如果接口存在且返回成功，说明token有效
+//            if (userInfoResponse.getStatusCode().is2xxSuccessful()) {
+//                Result userInfoResult = userInfoResponse.getBody();
+//                if (userInfoResult != null && userInfoResult.getCode() == TestConstants.SUCCESS_CODE) {
+//                    System.out.println("✅ Token验证通过 - 可以正常访问受保护接口");
+//                }
+//            }
+//        } catch (Exception e) {
+//            System.out.println("⚠️ 用户信息接口可能不存在，但token格式正确");
+//        }
 
         System.out.println("🎯 登录功能验证完成");
     }
