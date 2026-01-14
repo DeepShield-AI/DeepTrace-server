@@ -1,0 +1,126 @@
+1. /api/esTraces/queryByPage - 分页查询接口
+已存在正常的查询测试，包括pageSize为0的情况，后续调整用例
+
+@Test
+@DisplayName("分页查询-边界值测试")
+public void testQueryByPage_BoundaryValues() {
+    // pageNum边界值
+    testPagination(-1, 10, "pageNum负数");      // 应该返回错误
+    testPagination(0, 10, "pageNum最小值");     // 第一页
+    testPagination(Integer.MAX_VALUE, 10, "pageNum最大值"); // 超大页码
+
+    // pageSize边界值
+    testPagination(0, -1, "pageSize负数");      // 应该返回错误
+    testPagination(0, 0, "pageSize为0");        // 已测试
+    testPagination(0, 1, "pageSize最小值");     // 已测试
+    testPagination(0, 1000, "pageSize较大值");  // 性能测试
+    testPagination(0, Integer.MAX_VALUE, "pageSize最大值"); // 超大页大小
+}
+
+@Test
+@DisplayName("分页查询-异常场景测试")
+public void testQueryByPage_ExceptionScenarios() {
+    // 缺失必填参数
+    testMissingParameter("pageNum");
+
+    // 非法参数格式
+    testInvalidParameterFormat("pageNum", "abc");
+    testInvalidParameterFormat("pageSize", "1.5");
+
+    // 时间范围异常
+    testTimeRangeValidation("endTime早于startTime");
+    testTimeRangeValidation("未来时间范围");
+}
+
+
+2. /api/esTraces/traceDetail - Trace详情查询接口
+已存在正常的查询测试
+
+@Test
+@DisplayName("Trace详情-异常场景测试")
+public void testTraceDetail_ExceptionScenarios() {
+    // 1. traceId不存在
+    testWithNonExistentTraceId("non_existent_trace_123");
+
+    // 2. traceId格式异常
+    testWithInvalidTraceId("");                    // 空字符串
+    testWithInvalidTraceId("   ");                 // 空白字符
+    testWithInvalidTraceId("invalid!@#trace");     // 特殊字符
+    testWithInvalidTraceId("a".repeat(1000));      // 超长traceId
+
+    // 3. 缺失必填参数
+    testMissingTraceIdParameter();
+
+    // 4. 权限验证（如果支持）
+    testAccessDeniedForUnauthorizedTrace();
+}
+
+3. /api/esTraces/statistic - 统计查询接口
+@Test
+@DisplayName("统计查询-功能完整性测试")
+public void testStatistics_FunctionalCompleteness() {
+    // 1. 三种统计类型
+    testStatisticType("count", "请求数统计");
+    testStatisticType("statusCount", "状态码统计");
+    testStatisticType("latencyStats", "延迟统计");
+
+    // 2. 时间范围筛选
+    testTimeRangeStatistics("最近1小时");
+    testTimeRangeStatistics("最近24小时");
+    testTimeRangeStatistics("自定义时间范围");
+
+    // 3. 筛选条件组合
+    testStatisticsWithFilters("协议筛选");
+    testStatisticsWithFilters("端点筛选");
+    testStatisticsWithFilters("状态码筛选");
+}
+@Test
+@DisplayName("统计查询-异常场景测试")
+public void testStatistics_ExceptionScenarios() {
+    // 1. type参数异常
+    testInvalidStatisticType("");                  // 空type
+    testInvalidStatisticType("invalidType");       // 无效type
+    testInvalidStatisticType("COUNT");             // 大小写敏感测试
+
+    // 2. 缺失type参数
+    testMissingTypeParameter();
+
+    // 3. 参数格式异常
+    testInvalidTimeFormat("startTime", "2024-13-01"); // 非法日期
+    testInvalidTimeFormat("endTime", "not-a-timestamp");
+}
+
+
+4. /api/esTraces/scrollQuery - 滚动查询接口
+//
+
+
+5. /api/esTraces/filters - 筛选项接口
+@Test
+@DisplayName("筛选项查询-功能测试")
+public void testFilters_Functional() {
+    // 1. 基本功能验证
+    testFiltersBasicFunctionality();
+
+    // 2. 数据结构验证
+    testFiltersDataStructure();
+
+    // 3. 数据完整性验证
+    testFiltersDataCompleteness();
+}
+
+@Test
+@DisplayName("筛选项查询-数据验证测试")
+public void testFilters_DataValidation() {
+    // 1. 协议列表验证
+    testProtocolFilters();
+
+    // 2. 端点列表验证
+    testEndpointFilters();
+
+    // 3. 状态码列表验证
+    testStatusCodeFilters();
+
+    // 4. 时间范围验证
+    testTimeRangeFilters();
+}

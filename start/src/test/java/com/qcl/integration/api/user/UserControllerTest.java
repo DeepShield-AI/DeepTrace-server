@@ -102,8 +102,9 @@ public class UserControllerTest {
 
         // 1. 登录参数（user-tian）
         UserLoginParam loginParam = new UserLoginParam();
-        loginParam.setUsername(TestConstants.TEST_USERNAME);  // 使用常量
-        loginParam.setPassword(TestConstants.TEST_PASSWORD);  // 使用常量
+        // 使用常量
+        loginParam.setUsername(TestConstants.TEST_USERNAME);
+        loginParam.setPassword(TestConstants.TEST_PASSWORD);
 
         System.out.println("📋 登录测试数据: 用户名=" + loginParam.getUsername());
 

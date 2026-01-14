@@ -29,12 +29,40 @@ public class EsTraceTestHelper {
     }
 
     /**
-     * 构建基础查询URL - 基于TestConstants
+     * 构建Trace基础查询URL - 基于TestConstants
      */
     public static String buildQueryUrl(int pageNum, int pageSize) {
         return String.format("%s%s%s?pageNum=%d&pageSize=%d",
                 TestConstants.ES_TRACE_BASE_URL, TestConstants.API_PREFIX,
                 TestConstants.ES_TRACES_QUERY_PATH, pageNum, pageSize);
+    }
+
+    /**
+     * 构建滚动查询URL
+     */
+    public static String buildScrollQueryUrl(String scrollId, Integer pageSize) {
+        StringBuilder urlBuilder = new StringBuilder();
+        urlBuilder.append(String.format("%s%s%s/scrollQuery",
+                TestConstants.ES_TRACE_BASE_URL, TestConstants.API_PREFIX,
+                TestConstants.ES_TRACES_QUERY_PATH));
+
+        if (scrollId != null) {
+            urlBuilder.append("?scrollId=").append(scrollId);
+        }
+        if (pageSize != null) {
+            urlBuilder.append(scrollId != null ? "&" : "?")
+                    .append("pageSize=").append(pageSize);
+        }
+
+        return urlBuilder.toString();
+    }
+
+    /**
+     * 构建Trace详情查询URL
+     */
+    public static String buildTraceDetailUrl(String traceId) {
+        return String.format("%s%s/esTraces/traceDetail?traceId=%s",
+                TestConstants.ES_TRACE_BASE_URL, TestConstants.API_PREFIX, traceId);
     }
 
     /**
@@ -60,6 +88,22 @@ public class EsTraceTestHelper {
         });
 
         return urlBuilder.toString();
+    }
+
+    /**
+     * 构建统计查询URL
+     */
+    public static String buildStatisticUrl(String type) {
+        return String.format("%s%s/esTraces/statistic?type=%s",
+                TestConstants.ES_TRACE_BASE_URL, TestConstants.API_PREFIX, type);
+    }
+
+    /**
+     * 构建筛选项查询URL
+     */
+    public static String buildFiltersUrl() {
+        return String.format("%s%s/esTraces/filters",
+                TestConstants.ES_TRACE_BASE_URL, TestConstants.API_PREFIX);
     }
 
     /**
@@ -235,20 +279,24 @@ public class EsTraceTestHelper {
     /**
      * 递归打印Map的所有字段
      * int level: 记录当前是第几层嵌套
+     * String indent：缩进字符串，控制输出的格式
      */
     private static void printDetailedMap(Map<String, Object> map, String indent, int level) {
         // 遍历，递归处理嵌套
+        // Map.Entry<String, Object> entry - Map中的每个键值对
+        // map.entrySet() - 获取Map中所有的键值对集合
         for (Map.Entry<String, Object> entry : map.entrySet()) {
+            // 获取当前键值对
             String key = entry.getKey();
             Object value = entry.getValue();
 
-            // 处理嵌套对象（Map）
+            // 如果值是嵌套的Map对象
             if (value instanceof Map) {
                 System.out.println(indent + key + ": {");
                 printDetailedMap((Map<String, Object>) value, indent + "  ", level + 1);
                 System.out.println(indent + "}");
             } else if (value instanceof List) {
-                // 处理数组（List）
+                // 如果值是List数组
                 List<?> list = (List<?>) value;
                 System.out.println(indent + key + ": [");
 
