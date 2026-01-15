@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import com.qcl.entity.Edges;
 import com.qcl.entity.Nodes;
+import com.qcl.entity.UserDTO;
 import com.qcl.exception.BizException;
 import com.qcl.entity.graph.EdgeStatsResult;
 import com.qcl.entity.graph.NodeStatsResult;
@@ -16,9 +17,11 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcl.entity.Traces;
+import com.qcl.utils.IndexNameResolver;
 import lombok.RequiredArgsConstructor;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -27,13 +30,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.ConnectException;
 import java.net.SocketException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EsTraceGraphServiceImpl implements EsTraceGraphService {
@@ -45,7 +48,9 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
 
     /**
      * 按节点分组统计信息
+     *
      * @param queryTracesParam 筛选条件
+     * @param user
      * @return 节点分组统计结果
      */
     @Retryable(
@@ -54,7 +59,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             backoff = @Backoff(delay = 100, multiplier = 2)
     )
     @Override
-    public List<NodeStatsResult> getNodesStats(QueryTracesParam queryTracesParam) {
+    public List<NodeStatsResult> getNodesStats(QueryTracesParam queryTracesParam, UserDTO user) {
 
         if(queryTracesParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -72,8 +77,10 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             Long timeWindow = (queryTracesParam.getEndTime() - queryTracesParam.getStartTime())/1000;
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "nodes");
+            log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("nodes") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("node_metrics", a -> a
@@ -322,7 +329,9 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
 
     /**
      * 按边（节点连接关系）分组统计信息
+     *
      * @param queryTracesParam 筛选条件
+     * @param user
      * @return 边分组统计结果
      */
     @Retryable(
@@ -331,7 +340,7 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             backoff = @Backoff(delay = 100, multiplier = 2)
     )
     @Override
-    public List<EdgeStatsResult> getEdgesStats(QueryTracesParam queryTracesParam) {
+    public List<EdgeStatsResult> getEdgesStats(QueryTracesParam queryTracesParam, UserDTO user) {
 
         if(queryTracesParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -349,8 +358,10 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             Long timeWindow = (queryTracesParam.getEndTime() - queryTracesParam.getStartTime())/1000;
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "edges");
+            log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
             SearchResponse<Edges> response = elasticsearchClient.search(s -> s
-                            .index("edges") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("node_metrics", a -> a
@@ -577,15 +588,17 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
      * @param queryTracesParam 筛选条件
      * @return 容器分组统计结果
      */
-    public List<NodeStatsResult> getNodesStatsByTrace(QueryTracesParam queryTracesParam) {
+    public List<NodeStatsResult> getNodesStatsByTrace(QueryTracesParam queryTracesParam, UserDTO user) {
         try {
             // 1. 构建查询条件
             Query query = buildQueryToTrace(queryTracesParam);
 
             Long timeWindow = (System.currentTimeMillis() - queryTracesParam.getStartTime()) / 1000;
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
+            log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("traces") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("group_by_container", a -> a

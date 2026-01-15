@@ -92,10 +92,23 @@ public class EsTraceController {
 
     /**
      * 获取所有可用的筛选项
+     * v2:支持用户筛选
      */
     @RequestMapping(value = "/filters", method = RequestMethod.GET)
-    public ResponseEntity<Map<String, List<String>>> filters() {
-        Map<String, List<String>> filters = esTraceService.getAllFilterOptions();
+    public ResponseEntity<?> filters(@RequestParam(required = false)Long  targetUserId, Principal principal) {
+        //获取当前登录用户
+        String userName = principal.getName();
+        if (userName == null){
+            return ResponseEntity.badRequest().body("暂未登录或token已经过期");
+        }
+        User user = this.userService.queryByUsername(userName);
+        if (user == null ){
+            return  ResponseEntity.badRequest().body(userName+"该用户不存在");
+        }
+        UserDTO userDTO = new UserDTO();
+        BeanUtils.copyProperties(user,userDTO);
+
+        Map<String, List<String>> filters = esTraceService.getAllFilterOptions(targetUserId, userDTO);
         return ResponseEntity.ok(filters);
     }
 

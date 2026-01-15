@@ -15,6 +15,7 @@ import com.qcl.utils.IndexNameResolver;
 import com.qcl.vo.PageResult;
 import com.qcl.utils.EsAggregationHelper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EsTraceServiceImpl implements EsTraceService {
@@ -50,6 +52,7 @@ public class EsTraceServiceImpl implements EsTraceService {
 
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
+            log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -101,6 +104,7 @@ public class EsTraceServiceImpl implements EsTraceService {
 
             // 2. 构建嵌套聚合查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
+            log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -172,6 +176,7 @@ public class EsTraceServiceImpl implements EsTraceService {
 
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
+            log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -329,6 +334,8 @@ public class EsTraceServiceImpl implements EsTraceService {
 
             // 2.执行查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
+            log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
+
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .query(finalQuery)
@@ -410,9 +417,11 @@ public class EsTraceServiceImpl implements EsTraceService {
      * 获取所有可用的筛选项
      */
     @Override
-    public Map<String, List<String>> getAllFilterOptions() {
+    public Map<String, List<String>> getAllFilterOptions(Long targetUserId,UserDTO user) {
         Map<String, List<String>> result = new java.util.HashMap<>();
         try {
+            String index = IndexNameResolver.generate(user, targetUserId, "traces");
+            log.info("index = {} userId={} userInfo={}",index, user.getUserId(),user);
             List<String> allEndpoints = esAggregationHelper.getDistinctTerms("traces", "endpoint.keyword");
             List<String> allProtocols = esAggregationHelper.getDistinctTerms("traces", "protocol.keyword");
             List<String> allStatusOptions = esAggregationHelper.getDistinctTerms("traces", "status_code.keyword");

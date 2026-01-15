@@ -19,6 +19,7 @@ public class EsAgentConfigController {
     private EsAgentConfigService esAgentConfigService;
 
     // 暂时未使用当前接口
+    @Deprecated
     @RequestMapping(value = "/search", method = RequestMethod.GET)
     public ResponseEntity<List<AgentConfig>> search(@RequestParam(required = false) String keyword,
                                                     @RequestParam(required = false, defaultValue = "0") Integer pageNum,

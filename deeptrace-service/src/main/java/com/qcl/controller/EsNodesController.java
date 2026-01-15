@@ -32,7 +32,7 @@ public class EsNodesController {
 
 
     /**
-     * 调用日志查询
+     * 资源分析 —— 调用日志查询
      * v2:支持用户筛选
      * @param queryNodeParam
      * @return PageResult<Nodes>
@@ -58,7 +58,7 @@ public class EsNodesController {
 
 
     /**
-     * 调用日志分组
+     * 资源分析 —— 调用日志分组
      * v2:支持用户筛选
      * @param queryNodeParam
      * @return
@@ -83,7 +83,7 @@ public class EsNodesController {
 
 
     /**
-     * 端点列表（全量数据）
+     * 资源分析 ——  端点列表（全量数据）
      * v2:支持用户筛选
      * @param queryNodeParam
      * @return List<EndpointProtocolStatsResult>
@@ -110,7 +110,7 @@ public class EsNodesController {
 
 
     /**
-     * 按分钟统计请求个数，每秒XX个
+     * 资源分析 —— 按分钟统计请求个数，每秒XX个
      * v2:支持用户筛选
      * @param queryNodeParam
      * @return
@@ -134,7 +134,7 @@ public class EsNodesController {
     }
 
     /**
-     * 按分钟统计异常比例
+     * 资源分析 —— 按分钟统计异常比例
      * v2:支持用户筛选
      * @param queryNodeParam
      * @return
@@ -159,7 +159,7 @@ public class EsNodesController {
     }
 
     /**
-     * 按分钟统计响应时延
+     * 资源分析 —— 按分钟统计响应时延
      * v2:支持用户筛选
      * @param queryNodeParam
      * @return

@@ -9,18 +9,16 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.alibaba.druid.util.StringUtils;
-import com.qcl.entity.Edges;
-import com.qcl.entity.EndpointProtocolStatsResult;
-import com.qcl.entity.Nodes;
-import com.qcl.entity.Traces;
+import com.qcl.entity.*;
 import com.qcl.entity.param.QueryEdgeParam;
 import com.qcl.entity.statistic.StatusTimeBucketResult;
-import com.qcl.entity.statistic.TimeBucketCountResult;
 import com.qcl.entity.statistic.TimeBucketResult;
 import com.qcl.exception.BizException;
 import com.qcl.service.EsEdgeService;
+import com.qcl.utils.IndexNameResolver;
 import com.qcl.vo.PageResult;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EsEdgesServiceImpl implements EsEdgeService {
@@ -167,7 +166,7 @@ public class EsEdgesServiceImpl implements EsEdgeService {
 
 
     @Override
-    public PageResult<Edges> queryByPage(QueryEdgeParam queryEdgeParam) {
+    public PageResult<Edges> queryByPage(QueryEdgeParam queryEdgeParam, UserDTO user) {
         if(queryEdgeParam.getStartTime() == null){
             throw new BizException("startTime is required");
         }
@@ -222,8 +221,10 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             int from = (pageNo - 1) * pageSize;
 
             // 5. 执行查询
+            String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
+            log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
             SearchResponse<Edges> response = elasticsearchClient.search(s -> s
-                            .index("edges") //todo??? 数据与用户绑定
+                            .index(index)
                             .query(finalQuery)
                             .from(from)
                             .size(pageSize)
@@ -270,7 +271,7 @@ public class EsEdgesServiceImpl implements EsEdgeService {
      * 调用日志按照状态码分组，按分钟进行统计
      */
     @Override
-    public List<StatusTimeBucketResult> getStatusCountByMinute(QueryEdgeParam queryEdgeParam) {
+    public List<StatusTimeBucketResult> getStatusCountByMinute(QueryEdgeParam queryEdgeParam, UserDTO user) {
 
         if(queryEdgeParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -292,8 +293,10 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             Query query = buildQuery(queryEdgeParam);
 
             // 2. 构建嵌套聚合查询
+            String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
+            log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("edges") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("status_groups", a -> a
@@ -356,7 +359,7 @@ public class EsEdgesServiceImpl implements EsEdgeService {
      * @param queryTracesParam 筛选条件
      * @return 端点和协议分组统计结果
      */
-    public List<EndpointProtocolStatsResult> getEndpointProtocolStats(QueryEdgeParam queryEdgeParam) {
+    public List<EndpointProtocolStatsResult> getEndpointProtocolStats(QueryEdgeParam queryEdgeParam, UserDTO user) {
 
         if(queryEdgeParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -378,8 +381,10 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             Query query = buildQuery(queryEdgeParam);
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
+            log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
-                            .index("edges") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("group_by_endpoint_protocol", a -> a
@@ -610,7 +615,7 @@ public class EsEdgesServiceImpl implements EsEdgeService {
 
 
     @Override
-    public List<TimeBucketResult> qpsByMinute(QueryEdgeParam queryEdgeParam) {
+    public List<TimeBucketResult> qpsByMinute(QueryEdgeParam queryEdgeParam, UserDTO user) {
 
         if(queryEdgeParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -637,8 +642,10 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             Query query = buildQuery(queryEdgeParam);
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
+            log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("edges") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -678,7 +685,7 @@ public class EsEdgesServiceImpl implements EsEdgeService {
     }
 
     @Override
-    public List<TimeBucketResult> errorRateByMinute(QueryEdgeParam queryEdgeParam) {
+    public List<TimeBucketResult> errorRateByMinute(QueryEdgeParam queryEdgeParam, UserDTO user) {
 
         if(queryEdgeParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -705,8 +712,10 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             Query query = buildQuery(queryEdgeParam);
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
+            log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("edges") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
@@ -776,7 +785,7 @@ public class EsEdgesServiceImpl implements EsEdgeService {
     }
 
     @Override
-    public List<TimeBucketResult> latencyStatsByMinute(QueryEdgeParam queryEdgeParam) {
+    public List<TimeBucketResult> latencyStatsByMinute(QueryEdgeParam queryEdgeParam, UserDTO user) {
 
         if(queryEdgeParam.getStartTime() == null){
             throw new BizException("startTime is required");
@@ -804,8 +813,10 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             Query query = buildQuery(queryEdgeParam);
 
             // 2. 构建聚合查询
+            String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
+            log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
-                            .index("edges") //todo??? 数据与用户绑定
+                            .index(index)
                             .size(0) // 不返回具体文档
                             .query(query)
                             .aggregations("per_minute", a -> a
