@@ -1,5 +1,8 @@
 package com.qcl.service.impl;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.alibaba.druid.util.StringUtils;
 import com.qcl.constants.UserRoleEnum;
 import com.qcl.entity.AgentBasic;
@@ -10,6 +13,7 @@ import com.qcl.service.EsMetricService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +28,9 @@ public class EsMetricServiceImpl implements EsMetricService {
     
     @Autowired
     private ElasticsearchClientWrapper elasticsearchClientWrapper;
+    
+    @Autowired
+    private ElasticsearchClient elasticsearchClient;
 
     /**
      * 从 ES 查询 agent_basic 数据
@@ -38,24 +45,66 @@ public class EsMetricServiceImpl implements EsMetricService {
         // 创建分页请求
         PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
         
-        // 获取用户 ID
-        Long userId = user.getUserId();
-        
-        // 根据用户角色查询
-        if (StringUtils.equalsIgnoreCase(user.getRole(), UserRoleEnum.ADMIN.getCode())) {
-            // 管理员用户：查询所有 agent
-            if (keyword == null || keyword.isEmpty()) {
-                return esAgentBasicRepository.findAll(pageRequest);
-            } else {
-                return esAgentBasicRepository.findByNameContaining(keyword, pageRequest);
+        try {
+            // 直接从 ES 数据库的 agent_basic 索引中查询所有数据，按分页参数返回
+            // 构建搜索请求
+            SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
+            searchRequestBuilder.index("agent_basic"); // 指定索引为 agent_basic
+            searchRequestBuilder.size(pageSize); // 设置每页大小
+            searchRequestBuilder.from(pageNum * pageSize); // 设置偏移量
+            searchRequestBuilder.timeout("30s"); // 设置超时时间
+            
+            // 构建查询条件 - 查询所有数据，不添加额外过滤条件
+            searchRequestBuilder.query(q -> q.matchAll(m -> m));
+            
+            // 执行搜索请求
+            SearchRequest searchRequest = searchRequestBuilder.build();
+            SearchResponse<Map> searchResponse = elasticsearchClient.search(searchRequest, Map.class);
+            
+            // 提取并转换结果
+            List<AgentBasic> agentBasics = new ArrayList<>();
+            // 使用Jackson将Map转换为对象，自动处理字段名转换（下划线转驼峰）
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            objectMapper.setPropertyNamingStrategy(com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE);
+            
+            for (var hit : searchResponse.hits().hits()) {
+                var source = hit.source();
+                if (source != null) {
+                    AgentBasic agentBasic = new AgentBasic();
+                    
+                    // 从state字段中提取数据，state是嵌套对象
+                    if (source.containsKey("state")) {
+                        Map<?, ?> state = (Map<?, ?>) source.get("state");
+                        System.out.println("stateeee: " + state);
+                        
+                        // 使用ObjectMapper将state对象转换为AgentBasic对象，自动处理字段名转换
+                        agentBasic = objectMapper.convertValue(state, AgentBasic.class);
+                        
+                        // 从source中获取id作为lcuuid的备选，确保lcuuid不为空
+                        if (agentBasic.getLcuuid() == null || agentBasic.getLcuuid().isEmpty()) {
+                            if (source.containsKey("id")) {
+                                agentBasic.setLcuuid(source.get("id").toString());
+                            }
+                        }
+                    } else {
+                        // 兼容旧格式，直接从source中获取数据
+                        agentBasic = objectMapper.convertValue(source, AgentBasic.class);
+                    }
+                    
+                    agentBasics.add(agentBasic);
+                }
             }
-        } else {
-            // 普通用户：查询自己的 agent
-            if (keyword == null || keyword.isEmpty()) {
-                return esAgentBasicRepository.findByUserId(userId.toString(), pageRequest);
-            } else {
-                return esAgentBasicRepository.findByNameContainingAndUserIdEquals(keyword, userId.toString(), pageRequest);
-            }
+            
+            // 获取总命中数
+            long totalHits = searchResponse.hits().total().value();
+            
+            // 创建分页结果
+            return new PageImpl<>(agentBasics, pageRequest, totalHits);
+            
+        } catch (Exception e) {
+            log.error("查询 agent 列表失败", e);
+            // 如果查询失败，返回空的 Page 对象
+            return Page.empty(pageRequest);
         }
     }
 
@@ -70,18 +119,19 @@ public class EsMetricServiceImpl implements EsMetricService {
         
         try {
             // 从 Elasticsearch 查询 metric tags 数据
-            // 假设 ES 中存在 metric 索引，并且包含 metrics.tags 字段
+            // 使用与 getMetricChartData 相同的索引名称
+            String indexName = "test_1s_metric";
             
-            // 检查 metric 索引是否存在
-            boolean metricIndexExists = elasticsearchClientWrapper.indexExists("metrics");
+            // 检查索引是否存在
+            boolean indexExists = elasticsearchClientWrapper.indexExists(indexName);
             
-            if (metricIndexExists) {
+            if (indexExists) {
                 // 实现真实的 Elasticsearch 聚合查询逻辑
-                // 查询 metrics.tags.cpu、metrics.tags.device、metrics.tags.interface 的唯一值
+                // 查询 tags.cpu、tags.device、tags.interface 的唯一值
                 
-                // CPU 核心数据 - 从 metrics.tags.cpu 字段查询
+                // CPU 核心数据 - 从 tags.cpu 字段查询
                 Map<String, Object> cpuMap = new HashMap<>();
-                List<String> cpuCoreStrings = elasticsearchClientWrapper.getDistinctValues("metrics", "tags.cpu");
+                List<String> cpuCoreStrings = elasticsearchClientWrapper.getDistinctValues(indexName, "tags.cpu");
                 List<Integer> cpuCores = new ArrayList<>();
                 for (String coreStr : cpuCoreStrings) {
                     try {
@@ -93,23 +143,23 @@ public class EsMetricServiceImpl implements EsMetricService {
                 cpuMap.put("core", cpuCores);
                 result.put("cpu", cpuMap);
                 
-                // 网络接口数据 - 从 metrics.tags.interface 字段查询
+                // 网络接口数据 - 从 tags.interface 字段查询
                 Map<String, Object> networkMap = new HashMap<>();
-                List<String> interfaces = elasticsearchClientWrapper.getDistinctValues("metrics", "tags.interface");
+                List<String> interfaces = elasticsearchClientWrapper.getDistinctValues(indexName, "tags.interface");
                 networkMap.put("interface", interfaces);
                 result.put("network", networkMap);
                 
-                // 磁盘设备数据 - 从 metrics.tags.device 字段查询
+                // 磁盘设备数据 - 从 tags.device 字段查询
                 Map<String, Object> diskMap = new HashMap<>();
-                List<String> devices = elasticsearchClientWrapper.getDistinctValues("metrics", "tags.device");
+                List<String> devices = elasticsearchClientWrapper.getDistinctValues(indexName, "tags.device");
                 diskMap.put("device", devices);
                 result.put("disk", diskMap);
                 
-                log.info("从 ES 的 metric 索引中查询到 tags 数据: CPU核心数={}, 网络接口数={}, 磁盘设备数={}", 
-                         cpuCores.size(), interfaces.size(), devices.size());
+                log.info("从 ES 的 {} 索引中查询到 tags 数据: CPU核心数={}, 网络接口数={}, 磁盘设备数={}", 
+                         indexName, cpuCores.size(), interfaces.size(), devices.size());
             } else {
-                // metric 索引不存在，使用默认数据
-                log.info("ES 中不存在 metric 索引，使用默认数据");
+                // 索引不存在，使用默认数据
+                log.info("ES 中不存在 {} 索引，使用默认数据", indexName);
                 
                 // 默认 CPU 核心数据
                 Map<String, Object> cpuMap = new HashMap<>();
@@ -132,8 +182,7 @@ public class EsMetricServiceImpl implements EsMetricService {
             
         } catch (Exception e) {
             // 处理异常
-            e.printStackTrace();
-            System.out.println("查询 ES metric tags 数据时发生异常，使用默认数据");
+            log.error("查询 ES metric tags 数据时发生异常", e);
             
             // 异常时返回空数据结构
             result.put("cpu", Collections.singletonMap("core", Collections.emptyList()));
