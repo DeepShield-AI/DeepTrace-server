@@ -214,8 +214,17 @@ public class AgentServiceImpl implements AgentService {
             //禁用配置入库
             AgentManageConfig agentManageConfig = new AgentManageConfig();
             agentManageConfig.setType(AgentManageTypeEnum.DISABLE.getCode());
+            agentManageConfig.setCreateTime(new Date());
+            agentManageConfig.setUpdatedAt(new Date());
             BeanUtils.copyProperties(param,agentManageConfig);
             agentManageConfigService.insert(agentManageConfig);
+
+            //将之前的 enable 删除
+            AgentManageConfig deleteConfig = new AgentManageConfig();
+            deleteConfig.setType(AgentManageTypeEnum.ENABLE.getCode());
+            deleteConfig.setHostIp(param.getHostIp());
+            deleteConfig.setUserId(param.getUserId());
+            agentManageConfigService.deleteByParam(deleteConfig);
 
             return Result.success(result);
 
@@ -255,6 +264,7 @@ public class AgentServiceImpl implements AgentService {
             String message = jsonObject.getString("message");
             String data = jsonObject.getString("data");
 
+            log.info("查询注册状态结果: {}, agent= {}" , registerResult,param);
             //注册失败给用户注册失败的原因;
             if (code == 404) {
                 log.error("注册失败: " + registerResult);
@@ -306,8 +316,18 @@ public class AgentServiceImpl implements AgentService {
             //注册配置入库
             AgentManageConfig agentManageConfig = new AgentManageConfig();
             agentManageConfig.setType(AgentManageTypeEnum.ENABLE.getCode());
+            agentManageConfig.setCreateTime(new Date());
+            agentManageConfig.setUpdatedAt(new Date());
             BeanUtils.copyProperties(param,agentManageConfig);
             agentManageConfigService.insert(agentManageConfig);
+
+            //将之前的disable删除
+            AgentManageConfig deleteConfig = new AgentManageConfig();
+            deleteConfig.setType(AgentManageTypeEnum.DISABLE.getCode());
+            deleteConfig.setHostIp(param.getHostIp());
+            deleteConfig.setUserId(param.getUserId());
+            agentManageConfigService.deleteByParam(deleteConfig);
+
 
             return Result.success(result);
         } catch (IOException e) {
