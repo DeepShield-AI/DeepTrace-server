@@ -25,6 +25,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.ConnectException;
@@ -67,6 +68,13 @@ public class EsNodeServiceImpl implements EsNodeService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
+
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryNodeParam.getUserId(),user);
+                return new ArrayList<>();
+            }
 
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
@@ -133,6 +141,14 @@ public class EsNodeServiceImpl implements EsNodeService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryNodeParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
+
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -228,6 +244,14 @@ public class EsNodeServiceImpl implements EsNodeService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryNodeParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
+
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -304,6 +328,14 @@ public class EsNodeServiceImpl implements EsNodeService {
             // 2. 构建嵌套聚合查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryNodeParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
+
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -417,6 +449,14 @@ public class EsNodeServiceImpl implements EsNodeService {
             // 5. 执行查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryNodeParam.getUserId(),user);
+                return new PageResult<>(new ArrayList<>(), pageNo, pageSize, 0, 0);
+            }
+
+
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .query(finalQuery)
@@ -489,6 +529,13 @@ public class EsNodeServiceImpl implements EsNodeService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryNodeParam.getUserId(), "nodes");
             log.info("index = {} userId={} userInfo={}",index, queryNodeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryNodeParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -854,5 +901,9 @@ public class EsNodeServiceImpl implements EsNodeService {
         );
     }
 
+    private  Boolean isIndexExist (String index) throws IOException {
+        boolean exists = elasticsearchClient.indices().exists(e -> e.index(index)).value();
+        return exists;
+    }
 
 }

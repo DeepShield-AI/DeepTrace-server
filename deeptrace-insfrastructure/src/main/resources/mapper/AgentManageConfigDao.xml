@@ -105,6 +105,15 @@ id, type, host_ip, host_password, ssh_port, agent_name, user_name, user_id, crea
     <insert id="insert" keyProperty="id" useGeneratedKeys="true">
         insert into agent_manage_config(type, host_ip, host_password, ssh_port, agent_name, user_name, user_id, create_time, updated_at)
         values (#{type}, #{hostIp}, #{hostPassword}, #{sshPort}, #{agentName}, #{userName}, #{userId}, #{createTime}, #{updatedAt})
+            on duplicate key update
+                                 type = VALUES(type),
+                                 host_ip = VALUES(host_ip),
+                                 host_password = VALUES(host_password),
+                                 ssh_port = VALUES(ssh_port),
+                                 agent_name = VALUES(agent_name),
+                                 user_name = VALUES(user_name),
+                                 user_id = VALUES(user_id),
+                                 updated_at = VALUES(updated_at)
     </insert>
 
     <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
@@ -122,15 +131,14 @@ id, type, host_ip, host_password, ssh_port, agent_name, user_name, user_id, crea
             (#{entity.type}, #{entity.hostIp}, #{entity.hostPassword}, #{entity.sshPort}, #{entity.agentName}, #{entity.userName}, #{entity.userId}, #{entity.createTime}, #{entity.updatedAt})
         </foreach>
         on duplicate key update
-type = values(type),
-host_ip = values(host_ip),
-host_password = values(host_password),
-ssh_port = values(ssh_port),
-agent_name = values(agent_name),
-user_name = values(user_name),
-user_id = values(user_id),
-create_time = values(create_time),
-updated_at = values(updated_at)
+            type = values(type),
+            host_ip = values(host_ip),
+            host_password = values(host_password),
+            ssh_port = values(ssh_port),
+            agent_name = values(agent_name),
+            user_name = values(user_name),
+            user_id = values(user_id),
+            updated_at = values(updated_at)
     </insert>
 
     <!--通过主键修改数据-->

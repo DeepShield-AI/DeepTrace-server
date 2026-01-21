@@ -220,11 +220,11 @@ public class AgentServiceImpl implements AgentService {
             agentManageConfigService.insert(agentManageConfig);
 
             //将之前的 enable 删除
-            AgentManageConfig deleteConfig = new AgentManageConfig();
+            /*AgentManageConfig deleteConfig = new AgentManageConfig();
             deleteConfig.setType(AgentManageTypeEnum.ENABLE.getCode());
             deleteConfig.setHostIp(param.getHostIp());
             deleteConfig.setUserId(param.getUserId());
-            agentManageConfigService.deleteByParam(deleteConfig);
+            agentManageConfigService.deleteByParam(deleteConfig);*/
 
             return Result.success(result);
 
@@ -322,11 +322,11 @@ public class AgentServiceImpl implements AgentService {
             agentManageConfigService.insert(agentManageConfig);
 
             //将之前的disable删除
-            AgentManageConfig deleteConfig = new AgentManageConfig();
+            /*AgentManageConfig deleteConfig = new AgentManageConfig();
             deleteConfig.setType(AgentManageTypeEnum.DISABLE.getCode());
             deleteConfig.setHostIp(param.getHostIp());
             deleteConfig.setUserId(param.getUserId());
-            agentManageConfigService.deleteByParam(deleteConfig);
+            agentManageConfigService.deleteByParam(deleteConfig);*/
 
 
             return Result.success(result);
