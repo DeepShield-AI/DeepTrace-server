@@ -72,19 +72,25 @@ public class EsMetricServiceImpl implements EsMetricService {
                 if (source != null) {
                     AgentBasic agentBasic = new AgentBasic();
                     
-                    // 从state字段中提取数据，state是嵌套对象
+                    // 从state字段中提取数据，state可能是嵌套对象或字符串
                     if (source.containsKey("state")) {
-                        Map<?, ?> state = (Map<?, ?>) source.get("state");
-                        System.out.println("stateeee: " + state);
+                        Object stateObj = source.get("state");
+                        System.out.println("stateeee: " + stateObj + ", type: " + stateObj.getClass());
                         
-                        // 使用ObjectMapper将state对象转换为AgentBasic对象，自动处理字段名转换
-                        agentBasic = objectMapper.convertValue(state, AgentBasic.class);
-                        
-                        // 从source中获取id作为lcuuid的备选，确保lcuuid不为空
-                        if (agentBasic.getLcuuid() == null || agentBasic.getLcuuid().isEmpty()) {
-                            if (source.containsKey("id")) {
-                                agentBasic.setLcuuid(source.get("id").toString());
+                        if (stateObj instanceof Map) {
+                            // 如果state是Map类型，直接转换
+                            Map<?, ?> state = (Map<?, ?>) stateObj;
+                            agentBasic = objectMapper.convertValue(state, AgentBasic.class);
+                            
+                            // 从source中获取id作为lcuuid的备选，确保lcuuid不为空
+                            if (agentBasic.getLcuuid() == null || agentBasic.getLcuuid().isEmpty()) {
+                                if (source.containsKey("id")) {
+                                    agentBasic.setLcuuid(source.get("id").toString());
+                                }
                             }
+                        } else {
+                            // 如果state不是Map类型（可能是String或其他类型），直接从source中获取数据
+                            agentBasic = objectMapper.convertValue(source, AgentBasic.class);
                         }
                     } else {
                         // 兼容旧格式，直接从source中获取数据
