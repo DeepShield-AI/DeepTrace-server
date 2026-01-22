@@ -128,7 +128,7 @@ public class ElasticsearchClientWrapper {
     }
 
     /**
-     * 执行聚合查询，将指定字段的所有值列出来然后去重，返回去重后的列表
+     * 查询指定字段的所有值并去重，返回去重后的列表
      */
     public List<String> getDistinctValues(String index, String field) {
         try {
@@ -140,81 +140,38 @@ public class ElasticsearchClientWrapper {
                 return new ArrayList<>();
             }
             
-            // 使用Elasticsearch的聚合功能获取不同值，这比获取所有文档更高效
-            try {
-                log.info("使用聚合功能查询不同值");
-                
-                // 构建聚合查询
-                SearchRequest searchRequest = SearchRequest.of(s -> s
-                        .index(index)
-                        .size(0) // 只需要聚合结果，不需要返回文档
-                        .timeout("30s") // 设置合理的超时时间
-                        .query(q -> q.matchAll(m -> m)) // 使用matchAll查询
-                        .aggregations("distinct_values", a -> a
-                                .terms(t -> t
-                                        .field(field) // 要聚合的字段
-                                        .size(10000) // 设置足够大的桶大小，避免结果截断
-                                )
-                        )
-                );
-                
-                SearchResponse<Map> searchResponse = elasticsearchClient.search(searchRequest, Map.class);
-                log.info("聚合查询完成");
-                
-                // 从聚合结果中提取不同值
-                Set<String> valueSet = new HashSet<>();
-                if (searchResponse.aggregations() != null) {
-                    var aggregations = searchResponse.aggregations();
-                    if (aggregations.containsKey("distinct_values")) {
-                        var termsAggregate = aggregations.get("distinct_values").sterms();
-                        if (termsAggregate != null && termsAggregate.buckets() != null) {
-                            for (var bucket : termsAggregate.buckets().array()) {
-                                valueSet.add(bucket.key().stringValue());
-                            }
-                        }
+            // 直接查询文档，使用合理的size值
+            SearchRequest searchRequest = SearchRequest.of(s -> s
+                    .index(index)
+                    .size(10000) // 使用合理的size值，避免内存问题
+                    .timeout("30s") // 设置合理的超时时间
+                    .query(q -> q.matchAll(m -> m)) // 使用matchAll查询
+            );
+            
+            SearchResponse<Map> searchResponse = elasticsearchClient.search(searchRequest, Map.class);
+            log.info("查询完成，共获取到 {} 条文档", searchResponse.hits().hits().size());
+            
+            // 从文档中提取字段值
+            Set<String> valueSet = new HashSet<>();
+            for (var hit : searchResponse.hits().hits()) {
+                var source = hit.source();
+                if (source != null) {
+                    // 尝试从source中提取字段值
+                    Object value = extractFieldValue(source, field);
+                    if (value != null) {
+                        valueSet.add(value.toString());
                     }
                 }
-                
-                List<String> distinctValues = new ArrayList<>(valueSet);
-                log.info("成功从聚合结果中提取字段值，共 {} 个去重后的值", distinctValues.size());
-                
-                // 打印获取到的值
-                if (!distinctValues.isEmpty()) {
-                    log.info("获取到的值示例: {}", distinctValues.subList(0, Math.min(10, distinctValues.size())));
-                }
-                return distinctValues;
-            } catch (Exception e) {
-                log.error("聚合查询失败: {}", e.getMessage(), e);
-                
-                // 如果聚合查询失败，回退到使用较小的size值查询文档
-                log.info("回退到使用文档查询");
-                SearchRequest searchRequest = SearchRequest.of(s -> s
-                        .index(index)
-                        .size(10000) // 使用较小的size值
-                        .timeout("30s") // 设置合理的超时时间
-                        .query(q -> q.matchAll(m -> m)) // 使用matchAll查询
-                );
-                SearchResponse<Map> searchResponse = elasticsearchClient.search(searchRequest, Map.class);
-                log.info("文档查询完成，共获取到 {} 条文档", searchResponse.hits().hits().size());
-                
-                // 从文档中提取字段值
-                Set<String> valueSet = new HashSet<>();
-                for (var hit : searchResponse.hits().hits()) {
-                    var source = hit.source();
-                    if (source != null) {
-                        // 尝试从source中提取字段值
-                        Object value = extractFieldValue(source, field);
-                        if (value != null) {
-                            valueSet.add(value.toString());
-                        }
-                    }
-                }
-                
-                List<String> distinctValues = new ArrayList<>(valueSet);
-                log.info("成功从文档中提取字段值，共 {} 个去重后的值", distinctValues.size());
-                
-                return distinctValues;
             }
+            
+            List<String> distinctValues = new ArrayList<>(valueSet);
+            log.info("成功从文档中提取字段值，共 {} 个去重后的值", distinctValues.size());
+            
+            // 打印获取到的值
+            if (!distinctValues.isEmpty()) {
+                log.info("获取到的值示例: {}", distinctValues.subList(0, Math.min(10, distinctValues.size())));
+            }
+            return distinctValues;
         } catch (Exception e) {
             log.error("执行查询失败: 索引={}, 字段={}", index, field, e);
             return new ArrayList<>();
