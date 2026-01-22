@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -223,6 +224,13 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             // 5. 执行查询
             String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
             log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryEdgeParam.getUserId(),user);
+                return new PageResult<>(new ArrayList<>(), pageNo, pageSize, 0, 0);
+            }
+
             SearchResponse<Edges> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .query(finalQuery)
@@ -295,6 +303,14 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             // 2. 构建嵌套聚合查询
             String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
             log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryEdgeParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
+
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -383,6 +399,14 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
             log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryEdgeParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
+
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -644,6 +668,13 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
             log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryEdgeParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -714,6 +745,13 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
             log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryEdgeParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -815,6 +853,13 @@ public class EsEdgesServiceImpl implements EsEdgeService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryEdgeParam.getUserId(), "edges");
             log.info("index = {} userId={} userInfo={}",index, queryEdgeParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryEdgeParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -865,5 +910,9 @@ public class EsEdgesServiceImpl implements EsEdgeService {
         }
     }
 
+    private  Boolean isIndexExist (String index) throws IOException {
+        boolean exists = elasticsearchClient.indices().exists(e -> e.index(index)).value();
+        return exists;
+    }
 
 }

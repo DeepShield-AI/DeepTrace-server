@@ -26,6 +26,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.ConnectException;
@@ -79,6 +80,13 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "nodes");
             log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryTracesParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
             SearchResponse<Nodes> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -360,6 +368,13 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "edges");
             log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryTracesParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
             SearchResponse<Edges> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -597,6 +612,13 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
             log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryTracesParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -939,6 +961,11 @@ public class EsTraceGraphServiceImpl implements EsTraceGraphService {
         return "Unknown";
     }
 
+
+    private  Boolean isIndexExist (String index) throws IOException {
+        boolean exists = elasticsearchClient.indices().exists(e -> e.index(index)).value();
+        return exists;
+    }
 
 
 }

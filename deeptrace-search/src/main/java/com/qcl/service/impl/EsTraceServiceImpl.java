@@ -23,7 +23,9 @@ import co.elastic.clients.elasticsearch.core.ScrollResponse;
 
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
@@ -53,6 +55,13 @@ public class EsTraceServiceImpl implements EsTraceService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
             log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryTracesParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -105,6 +114,13 @@ public class EsTraceServiceImpl implements EsTraceService {
             // 2. 构建嵌套聚合查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
             log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryTracesParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -177,6 +193,13 @@ public class EsTraceServiceImpl implements EsTraceService {
             // 2. 构建聚合查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
             log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryTracesParam.getUserId(),user);
+                return new ArrayList<>();
+            }
+
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
                             .size(0) // 不返回具体文档
@@ -314,6 +337,7 @@ public class EsTraceServiceImpl implements EsTraceService {
         }
     }
 
+
     /**
      * 分页查询
      *
@@ -335,6 +359,12 @@ public class EsTraceServiceImpl implements EsTraceService {
             // 2.执行查询
             String index = IndexNameResolver.generate(user, queryTracesParam.getUserId(), "traces");
             log.info("index = {} userId={} userInfo={}",index, queryTracesParam.getUserId(),user);
+
+            boolean exists = isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, queryTracesParam.getUserId(),user);
+                return new PageResult<>(new ArrayList<>(), pageNum, pageSize, 0, 0);
+            }
 
             SearchResponse<Traces> response = elasticsearchClient.search(s -> s
                             .index(index)
@@ -421,6 +451,13 @@ public class EsTraceServiceImpl implements EsTraceService {
         Map<String, List<String>> result = new java.util.HashMap<>();
         try {
             String index = IndexNameResolver.generate(user, targetUserId, "traces");
+
+            boolean exists =isIndexExist( index);
+            if (!exists) {
+                log.warn("Index {} does not exist, returning empty result. userId={} userInfo={}", index, targetUserId,user);
+                return new HashMap<>();
+            }
+
             log.info("index = {} userId={} userInfo={}",index, user.getUserId(),user);
             List<String> allEndpoints = esAggregationHelper.getDistinctTerms("traces", "endpoint.keyword");
             List<String> allProtocols = esAggregationHelper.getDistinctTerms("traces", "protocol.keyword");
@@ -614,6 +651,11 @@ public class EsTraceServiceImpl implements EsTraceService {
         return Query.of(q -> q
                 .bool(b -> b.must(mainMustConditions))
         );
+    }
+
+    private  Boolean isIndexExist (String index) throws IOException {
+        boolean exists = elasticsearchClient.indices().exists(e -> e.index(index)).value();
+        return exists;
     }
 
 }
