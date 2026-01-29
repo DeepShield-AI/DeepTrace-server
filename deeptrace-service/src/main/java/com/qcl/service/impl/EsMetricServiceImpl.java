@@ -125,7 +125,7 @@ public class EsMetricServiceImpl implements EsMetricService {
         
         try {
             // 从 Elasticsearch 查询 metric tags 数据
-            // 使用与 getMetricChartData 相同的索引名称
+            // 使用默认表名 test_1s_metric
             String indexName = "test_1s_metric";
             
             // 检查索引是否存在
@@ -201,6 +201,8 @@ public class EsMetricServiceImpl implements EsMetricService {
     
     /**
      * 从 ES 查询曲线图指标数据
+     * @param user 用户信息
+     * @param agentName 采集器名称
      * @param namespace 命名空间
      * @param startTime 开始时间
      * @param endTime 结束时间
@@ -212,21 +214,30 @@ public class EsMetricServiceImpl implements EsMetricService {
      * @return 曲线图指标数据
      */
     @Override
-    public Map<String, Object> getMetricChartData(String namespace, String startTime, String endTime, String cpu, String device, String networkInterface, Integer dataSize, String name) {
+    public Map<String, Object> getMetricChartData(User user, String agentName, String namespace, String startTime, String endTime, String cpu, String device, String networkInterface, Integer dataSize, String name) {
         // 构建返回结果
         Map<String, Object> result = new HashMap<>();
         
         try {
             // 从 Elasticsearch 查询曲线图指标数据
+            // 使用 generateMetricTableName 方法根据用户和 agentName 生成表名
+            String generatedIndexName = generateMetricTableName(user, agentName);
+            // 检查生成的表是否存在，如果不存在则使用默认表
+            String indexName = generatedIndexName;
+            if (!elasticsearchClientWrapper.indexExists(generatedIndexName)) {
+                log.warn("生成的表 {} 不存在，使用默认表 test_1s_metric", generatedIndexName);
+                indexName = "test_1s_metric";
+            }
+            
             List<Map<String, Object>> chartData = elasticsearchClientWrapper.getMetricChartData(
-                    "test_1s_metric", namespace, startTime, endTime, cpu, device, networkInterface, dataSize, name);
+                    indexName, namespace, startTime, endTime, cpu, device, networkInterface, dataSize, name);
             
             // 构建返回结果
             result.put("data", chartData);
             result.put("total", chartData.size());
             result.put("success", true);
             
-            log.info("从 ES 的 test_1s_metric 索引中查询到曲线图指标数据: 共 {} 个数据点", chartData.size());
+            log.info("从 ES 的 {} 索引中查询到曲线图指标数据: 共 {} 个数据点", indexName, chartData.size());
         } catch (Exception e) {
             // 处理异常
             e.printStackTrace();
@@ -240,5 +251,21 @@ public class EsMetricServiceImpl implements EsMetricService {
         }
         
         return result;
+    }
+    
+    /**
+     * 根据用户和agentName生成metric表名
+     * 格式: metric_agentName_userId
+     */
+    private String generateMetricTableName(User user, String agentName) {
+        if (user == null || agentName == null || agentName.isEmpty()) {
+            log.warn("用户信息或agentName为空，使用默认表名");
+            return "test_1s_metric";
+        }
+        
+        // 生成表名: metric_agentName_userId
+        String tableName = "metric_" + agentName + "_" + user.getUserId();
+        log.info("生成的metric表名: {}", tableName);
+        return tableName;
     }
 }

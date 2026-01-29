@@ -64,6 +64,7 @@ public class EsMetricController {
     // 获取 metric chart 数据
     @RequestMapping(value = "/chart", method = RequestMethod.GET)
     public ResponseEntity<?> getMetricChartData(
+            @RequestParam(required = false) String agentName,
             @RequestParam(required = false) String namespace,
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime,
@@ -71,10 +72,21 @@ public class EsMetricController {
             @RequestParam(required = false) String device,
             @RequestParam(required = false) String networkInterface,
             @RequestParam(required = false) Integer dataSize,
-            @RequestParam(required = false) String name) {
+            @RequestParam(required = false) String name,
+            Principal principal) {
+        // 获取当前登录用户
+        String userName = principal.getName();
+        if (userName == null){
+            return ResponseEntity.badRequest().body("暂未登录或token已经过期");
+        }
+        User user = this.userService.queryByUsername(userName);
+        if (user == null ){
+            return ResponseEntity.badRequest().body(userName+"该用户不存在");
+        }
+        
         // 调用服务层从 ES 查询 metric chart 数据
         Map<String, Object> chartData = esMetricService.getMetricChartData(
-                namespace, startTime, endTime, cpu, device, networkInterface, dataSize, name);
+                user, agentName, namespace, startTime, endTime, cpu, device, networkInterface, dataSize, name);
         return ResponseEntity.ok(chartData);
     }
 }

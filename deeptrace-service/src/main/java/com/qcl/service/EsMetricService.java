@@ -14,5 +14,5 @@ public interface EsMetricService {
     Map<String, Object> getMetricTags();
     
     // 从 ES 查询曲线图指标数据
-    Map<String, Object> getMetricChartData(String namespace, String startTime, String endTime, String cpu, String device, String networkInterface, Integer dataSize, String name);
+    Map<String, Object> getMetricChartData(com.qcl.entity.User user, String agentName, String namespace, String startTime, String endTime, String cpu, String device, String networkInterface, Integer dataSize, String name);
 }
