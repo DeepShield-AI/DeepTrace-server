@@ -9,7 +9,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>deeptrace-service</artifactId>
+    <artifactId>deeptrace-greptimedb</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -17,35 +17,45 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+
     <dependencies>
         <dependency>
-            <groupId>com.encryption</groupId>
-            <artifactId>deeptrace-search</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>7.0.5.Final</version>
         </dependency>
 
         <dependency>
             <groupId>com.encryption</groupId>
-            <artifactId>deeptrace-insfrastructure</artifactId>
+            <artifactId>deeptrace-common</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>com.encryption</groupId>
-            <artifactId>deeptrace-greptimedb</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <groupId>io.greptime</groupId>
+            <artifactId>ingester-all</artifactId>
+            <version>0.15.0</version>
         </dependency>
-
-        
-
+        <!-- Source: https://mvnrepository.com/artifact/io.greptime/greptimedb-all -->
         <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>4.9.3</version>
+            <groupId>io.greptime</groupId>
+            <artifactId>greptimedb-all</artifactId>
+            <version>0.4.1</version>
+            <scope>compile</scope>
         </dependency>
+
+
 
     </dependencies>
-
 
     <build>
         <plugins>

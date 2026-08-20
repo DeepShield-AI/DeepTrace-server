@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qcl.greptime.dao.GreptimeMetricDao">
+    <resultMap id="MetricMap" type="com.qcl.greptime.entity.MetricPoint">
+        <result property="ts" column="ts" jdbcType="TIMESTAMP"/>
+        <result property="metric1" column="metric1" jdbcType="VARCHAR"/>
+        <result property="value1" column="value1" jdbcType="DOUBLE"/>
+        <result property="tag1" column="tag1" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 示例：按 metric 和时间窗口查询 -->
+    <select id="queryByMetricAndRange" resultMap="MetricMap">
+        SELECT ts, metric1, value1, tag1
+        FROM metric_mybatis
+
+        <where>
+            <if test="metric != null">
+                and metric1 = #{metric}
+            </if>
+            <if test="start != null ">
+                and ts >= #{start}
+            </if>
+            <if test="end != null ">
+                and ts  &lt;=  #{end}
+            </if>
+
+        </where>
+        ORDER BY ts
+    </select>
+</mapper>

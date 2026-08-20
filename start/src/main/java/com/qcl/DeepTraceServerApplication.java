@@ -12,7 +12,7 @@ import org.springframework.retry.annotation.EnableRetry;
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan("com.qcl.config")
-@MapperScan({"com.qcl.dao"})
+//@MapperScan({"com.qcl.dao"})
 @EnableRetry
 public class DeepTraceServerApplication {
 

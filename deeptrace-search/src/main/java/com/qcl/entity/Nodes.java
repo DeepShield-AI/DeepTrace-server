@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode
 @Document(indexName = "nodes")
-public class Nodes implements Serializable {
+public class  Nodes implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id

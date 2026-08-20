@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qcl.greptime.dao.GrpcLatencyMapper">
+
+
+    <select id="selectPercentileLatencyByTimeRange" resultType="java.util.Map">
+        SELECT
+            approx_percentile_cont(${valueColumn}, #{percentile}) AS p95_latency,
+            ${groupByColumn}
+        FROM grpc_latencies
+        WHERE ts >= #{startTime} AND ts &lt;=  #{endTime}
+        GROUP BY ${groupByColumn}
+    </select>
+
+    <!-- Mybatis 不支持TQL解析，无法实现参数动态注入，需要借助HTTP API-->
+    <select id="queryTQL" resultType="java.util.Map">
+        TQL EVAL ('2024-07-11 20:00:00Z', '2024-07-11 20:00:20Z','15s') quantile_over_time(0.95, grpc_latencies{host!=""}[5s]);
+    </select>
+
+
+</mapper>

@@ -22,6 +22,7 @@
         <module>deeptrace-service</module>
         <module>start</module>
         <module>deeptrace-common</module>
+        <module>deeptrace-greptimedb</module>
     </modules>
 
     <properties>
